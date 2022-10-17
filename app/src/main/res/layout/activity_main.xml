@@ -6,15 +6,6 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
-    <TextView
-        android:id="@+id/pausePlay"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Pause/Play"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
         android:id="@+id/bpmString"
@@ -24,7 +15,7 @@
         android:textSize="30sp"
         android:textStyle="bold"
         android:textColor="@color/black"
-        app:layout_constraintBottom_toTopOf="@+id/pausePlay"
+        app:layout_constraintBottom_toTopOf="@+id/pausePlayButton"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
@@ -37,21 +28,89 @@
         android:textSize="30sp"
         android:textStyle="bold"
         android:textColor="@color/black"
-        app:layout_constraintBottom_toTopOf="@+id/pausePlay"
+        app:layout_constraintBottom_toTopOf="@+id/tempoMarking"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toBottomOf="@id/bpmString" />
 
+    <TextView
+        android:id="@+id/tempoMarking"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Allegro"
+        android:textColor="@color/black"
+        app:layout_constraintBottom_toTopOf="@+id/pausePlayButton"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/bpmInteger" />
+
+    <Button
+        android:id="@+id/pausePlayButton"
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:text="Pause/Play"
+        android:backgroundTint="@color/black"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
     <Button
         android:id="@+id/minusButton"
-        android:layout_width="40dp"
-        android:layout_height="40dp"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
         android:text="-"
-        android:textSize="24sp"
-        app:layout_constraintBottom_toTopOf="@id/bpmInteger"
+        android:backgroundTint="@color/black"
+        app:layout_constraintBottom_toTopOf="@+id/pausePlayButton"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toLeftOf="@id/bpmString"
-        app:layout_constraintTop_toBottomOf="@id/bpmString" />
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <Button
+        android:id="@+id/plusButton"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:text="+"
+        android:backgroundTint="@color/black"
+        app:layout_constraintBottom_toTopOf="@+id/pausePlayButton"
+        app:layout_constraintLeft_toRightOf="@id/bpmString"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <Button
+        android:id="@+id/tapButton"
+        android:layout_width="160dp"
+        android:layout_height="160dp"
+        android:text="TAP"
+        android:backgroundTint="@color/black"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/pausePlayButton" />
+
+    <Button
+        android:id="@+id/recordButton"
+        android:layout_width="100dp"
+        android:layout_height="160dp"
+        android:text="RECORD"
+        android:backgroundTint="@color/black"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toLeftOf="@id/tapButton"
+        app:layout_constraintTop_toBottomOf="@id/pausePlayButton" />
+
+    <Button
+        android:id="@+id/importButton"
+        android:layout_width="100dp"
+        android:layout_height="160dp"
+        android:text="IMPORT"
+        android:backgroundTint="@color/black"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintLeft_toRightOf="@id/tapButton"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/pausePlayButton" />
+
+
 
 
 
