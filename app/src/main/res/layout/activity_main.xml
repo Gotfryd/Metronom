@@ -32,7 +32,8 @@
         app:layout_constraintBottom_toTopOf="@+id/tempoMarking"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/bpmString" />
+        app:layout_constraintTop_toBottomOf="@id/bpmString"
+        android:imeOptions="actionDone" />
 
     <TextView
         android:id="@+id/tempoMarking"

@@ -5,7 +5,9 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.View;
+import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -16,52 +18,87 @@ import java.util.TimerTask;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
+    boolean isPlaying = false;
+    int bpmAmount;
+
+    MediaPlayer tickSound;;
+    Timer tickTimer;
+    TimerTask tickTone;
+
+    EditText bpmEditTextInc;
+
+    Button incrementButton;
+    Button decrementButton;
+    Button pausePlayButton;
+    Button recordButton;
+    Button tapButton;
+    Button importButton;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        bpmEditTextInc = (EditText) findViewById(R.id.bpmInteger);
 
-        Button incrementButton = (Button) findViewById(R.id.incrementButton);
+        incrementButton = (Button) findViewById(R.id.incrementButton);
         incrementButton.setOnClickListener(this);
 
-        Button decrementButton = (Button) findViewById(R.id.decrementButton);
+        decrementButton = (Button) findViewById(R.id.decrementButton);
         decrementButton.setOnClickListener(this);
 
-        Button pausePlayButton = (Button) findViewById(R.id.pausePlayButton);
+        pausePlayButton = (Button) findViewById(R.id.pausePlayButton);
         pausePlayButton.setOnClickListener(this);
 
-        Button recordButton = (Button) findViewById(R.id.recordButton);
+        recordButton = (Button) findViewById(R.id.recordButton);
         recordButton.setOnClickListener(this);
 
-        Button tapButton = (Button) findViewById(R.id.tapButton);
+        tapButton = (Button) findViewById(R.id.tapButton);
         tapButton.setOnClickListener(this);
 
-        Button importButton = (Button) findViewById(R.id.importButton);
+        importButton = (Button) findViewById(R.id.importButton);
         importButton.setOnClickListener(this);
 
-        boolean isPlaying = false;
-        final MediaPlayer tickSound = MediaPlayer.create(this, R.raw.tickeffect);
-        Timer tickTimer = new Timer("metronomeCounter", true);
-        TimerTask tickTone = new TimerTask(){
+
+        tickSound = MediaPlayer.create(this, R.raw.tickeffect);
+        tickTimer = new Timer("metronomeCounter", true);
+
+
+        tickTone = new TimerTask(){
+            @Override
+            public void run(){
+               tickSound.start();
+            }
+        };
+
+        bpmEditTextInc.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                if(actionId == EditorInfo.IME_ACTION_DONE){
+                    stopTimer();
+                    startTimer();
+                }
+                return false;
+            }
+        });
+
+    }
+
+
+
+    public void stopTimer(){
+        tickTimer.cancel();
+    }
+
+    public void startTimer(){
+        tickTimer = new Timer("metronomeCounter", true);
+        tickTone = new TimerTask(){
             @Override
             public void run(){
                 tickSound.start();
             }
         };
-        if(isPlaying) {
-            tickTimer.scheduleAtFixedRate(tickTone, 500, 500); //120 BPM. Executes every 500 ms. //zamiast suchego delaya pobrac aktualna wartosc z bpmInteger
-        }
-
-//        tickTone.cancel();
-//        tickTone = new TimerTask(){
-//            @Override
-//            public void run(){
-//                tickSound.start();
-//            }
-//        };
-//        tickTimer.scheduleAtFixedRate(tickTone, 1000, 1000); //new tempo, 60 BPM. Executes every 1000 ms.
-
+        tickTimer.scheduleAtFixedRate(tickTone, 1000, 60000/Integer.valueOf(bpmEditTextInc.getText().toString()));
     }
 
     @Override
@@ -72,24 +109,31 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             case R.id.incrementButton:
 
-                Toast.makeText(MainActivity.this, "incrementButton onClick test", Toast.LENGTH_SHORT).show();
-                EditText bpmEditTextInc = (EditText) findViewById(R.id.bpmInteger);
-                int bpmAmountInc = Integer.valueOf(bpmEditTextInc.getText().toString()).intValue();
-                bpmEditTextInc.setText(String.valueOf(bpmAmountInc+1));
-                Toast.makeText(MainActivity.this, String.valueOf(bpmAmountInc+1), Toast.LENGTH_SHORT).show();
+                bpmAmount = Integer.valueOf(bpmEditTextInc.getText().toString()).intValue();
+                bpmEditTextInc.setText(String.valueOf(bpmAmount+1));
+                //Toast.makeText(MainActivity.this, String.valueOf(bpmAmount+1), Toast.LENGTH_SHORT).show();
+                stopTimer();
+                startTimer();
                 break;
 
             case R.id.decrementButton:
 
-                Toast.makeText(MainActivity.this, "decrementButton onClick test", Toast.LENGTH_SHORT).show();
-                EditText bpmEditTextDec = (EditText) findViewById(R.id.bpmInteger);
-                int bpmAmountDec = Integer.valueOf(bpmEditTextDec.getText().toString()).intValue();
-                bpmEditTextDec.setText(String.valueOf(bpmAmountDec-1));
-                Toast.makeText(MainActivity.this, String.valueOf(bpmAmountDec-1), Toast.LENGTH_SHORT).show();
+                bpmAmount = Integer.valueOf(bpmEditTextInc.getText().toString()).intValue();
+                bpmEditTextInc.setText(String.valueOf(bpmAmount-1));
+                //Toast.makeText(MainActivity.this, String.valueOf(bpmAmount-1), Toast.LENGTH_SHORT).show();
+                stopTimer();
+                startTimer();
                 break;
 
             case R.id.pausePlayButton:
-                isPlaying = !isPlaying; // zmienia stan z pauzy na play i na odwrot 
+                if(isPlaying){
+                    this.stopTimer();
+                    isPlaying=false;
+                }
+                else{
+                    this.startTimer();
+                    isPlaying=true;
+                }
                 Toast.makeText(MainActivity.this, "pausePlayButton onClick test", Toast.LENGTH_SHORT).show();
                 break;
 
