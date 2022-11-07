@@ -29,6 +29,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     boolean isPlaying = false;
     boolean importFlag = false;
     int bpmAmount;
+    int currentSongNo = 0;
 
     MediaPlayer tickSound;;
     Timer tickTimer;
@@ -47,6 +48,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     Button importButton;
     Button previousSongButton;
     Button nextSongButton;
+
+    List<SongsList> importedSongs = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -111,7 +114,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     }
 
-    List<SongsList> importedSongs = new ArrayList<>();
 
     public void readSongsData() {
         InputStream istream = getResources().openRawResource(R.raw.songsdata);
@@ -122,13 +124,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         String line = "";
 
         try {
-            //pomin naglowek pliku csv (Wykonawca, Tytul, Tempo(BPM)
-            reader.readLine();
+            reader.readLine();    //pomin naglowek pliku csv (Wykonawca, Tytul, Tempo(BPM)
 
             while ((line = reader.readLine()) != null) {
                 Log.d("MyActivity", "Line: " + line);
-                // Oddziel znakiem ,
-                String[] tokens = line.split(",");
+                String[] tokens = line.split(","); // Oddziel znakiem ,
 
                 //odczytaj dane
                 SongsList sample = new SongsList();
@@ -159,6 +159,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
         };
         tickTimer.scheduleAtFixedRate(tickTone, 1000, 60000/Integer.valueOf(bpmEditTextInc.getText().toString()));
+    }
+
+    public void setNewBpmAndName(){
+        bpmEditTextInc.setText(String.valueOf(importedSongs.get(currentSongNo).getTrackBpm())); // ustaw BPM
+        songName.setText(String.valueOf(importedSongs.get(currentSongNo).getComposer()+" - "+importedSongs.get(currentSongNo).getTitle())); // ustaw wykonawce i nazwe utworu
     }
 
     @Override
@@ -211,20 +216,22 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 Toast.makeText(MainActivity.this, "recordButton onClick test", Toast.LENGTH_SHORT).show();
                 break;
 
-            case R.id.importButton: //pierwsze klikniecie importuje baze i rozwija 3 przyciski do sterowania, drugie klikniecie zwija przyciski
+            case R.id.importButton: //pierwsze klikniecie importuje baze i wlacza 3 przyciski do sterowania, kolejne klikniecie zwija przyciski
                 Toast.makeText(MainActivity.this, "importButton onClick test", Toast.LENGTH_SHORT).show();
                 if(!importFlag) {
+                    this.stopTimer();
+                    isPlaying=false;
+
                     readSongsData(); // funkcja wczytujaca piosenki z tempem z pliku csv
                     previousSongButton.setEnabled(true);
                     nextSongButton.setEnabled(true);
                     songName.setEnabled(true);
                     songName.setTextColor(Color.BLACK);
                     importFlag = true;
+                    setNewBpmAndName();
 
-                    for (int i = 0; i < importedSongs.size(); i++) { // do testu
-                        System.out.println(importedSongs.get(i));
-                    }
-
+                    this.startTimer();
+                    isPlaying=true;
                 }
                 else{
                     previousSongButton.setEnabled(false);
@@ -232,6 +239,49 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     songName.setEnabled(false);
                     songName.setTextColor(Color.rgb(136,136,136));
                     importFlag = false;
+
+                    this.stopTimer();
+                    isPlaying=false;
+                }
+                break;
+
+            case R.id.previousSongButton:
+                Toast.makeText(MainActivity.this, "previousSongButton onClick test", Toast.LENGTH_SHORT).show();
+                if(currentSongNo == 0){
+                    this.stopTimer();
+                    isPlaying=false;
+                    currentSongNo = (importedSongs.toArray().length-1);
+                    setNewBpmAndName();
+                    this.startTimer();
+                    isPlaying=true;
+                }
+                else{
+                    this.stopTimer();
+                    isPlaying=false;
+                    currentSongNo--;
+                    setNewBpmAndName();
+                    this.startTimer();
+                    isPlaying=true;
+                }
+                break;
+
+            case R.id.nextSongButton:
+                Toast.makeText(MainActivity.this, "nextSongButton onClick test", Toast.LENGTH_SHORT).show();
+                if(currentSongNo == (importedSongs.toArray().length-1)){
+                    this.stopTimer();
+                    isPlaying=false;
+                    currentSongNo = 0;
+                    setNewBpmAndName();
+                    this.startTimer();
+                    isPlaying=true;
+                }
+                else{
+                    this.stopTimer();
+                    isPlaying=false;
+                    currentSongNo++;
+                    setNewBpmAndName();
+                    this.startTimer();
+                    isPlaying=true;
                 }
                 break;
 
