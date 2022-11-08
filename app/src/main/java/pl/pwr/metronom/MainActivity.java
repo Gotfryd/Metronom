@@ -30,6 +30,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     boolean importFlag = false;
     int bpmAmount;
     int currentSongNo = 0;
+    String tempoName;
 
     MediaPlayer tickSound;;
     Timer tickTimer;
@@ -50,6 +51,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     Button nextSongButton;
 
     List<SongsList> importedSongs = new ArrayList<>();
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -86,9 +88,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         nextSongButton = (Button) findViewById(R.id.nextSongButton);
         nextSongButton.setOnClickListener(this);
 
+        bpmAmount = Integer.valueOf(bpmEditTextInc.getText().toString()).intValue(); // pierwsze i jednokrotne przypisanie wartosci do tej zmiennej zeby tempoMarking zadzialalo poprawnie
+        setTempoMarking(); // jednokrotne wykonanie funkcji zeby ustawila sie nazwa tempa po wlaczeniu aplikacji (na samym starcie)
 
         tickSound = MediaPlayer.create(this, R.raw.tickeffect);
         tickTimer = new Timer("metronomeCounter", true);
+
 
 
         tickTone = new TimerTask(){
@@ -98,19 +103,20 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
         };
 
-        bpmEditTextInc.setOnEditorActionListener(new TextView.OnEditorActionListener() {
+        bpmEditTextInc.setOnEditorActionListener(new TextView.OnEditorActionListener() { // akcja wykonujaca sie po kliknieciu przycisku "Enter" z klawiatury
             @Override
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
                 if(actionId == EditorInfo.IME_ACTION_DONE){
                     stopTimer();
-                    if(isPlaying) {
+                    if(!isPlaying) {
                         startTimer();
                     }
                 }
+                bpmAmount = Integer.valueOf(bpmEditTextInc.getText().toString()).intValue();
+                setTempoMarking();
                 return false;
             }
         });
-
 
     }
 
@@ -148,6 +154,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     public void stopTimer(){
         tickTimer.cancel();
+        isPlaying=false;
     }
 
     public void startTimer(){
@@ -159,11 +166,75 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
         };
         tickTimer.scheduleAtFixedRate(tickTone, 1000, 60000/Integer.valueOf(bpmEditTextInc.getText().toString()));
+        isPlaying=true;
     }
 
     public void setNewBpmAndName(){
         bpmEditTextInc.setText(String.valueOf(importedSongs.get(currentSongNo).getTrackBpm())); // ustaw BPM
         songName.setText(String.valueOf(importedSongs.get(currentSongNo).getComposer()+" - "+importedSongs.get(currentSongNo).getTitle())); // ustaw wykonawce i nazwe utworu
+    }
+
+    public static boolean isBetween(int x, int lower, int upper) {
+        return lower <= x && x <= upper;
+    }
+
+    public void setTempoMarking(){
+        if (isBetween(bpmAmount+1, 1, 29)) {
+            tempoMarking.setText("Larghissimo");
+        }
+        else if (isBetween(bpmAmount+1, 30, 39)) {
+            tempoMarking.setText("Grave");
+        }
+        else if (isBetween(bpmAmount+1, 40, 49)) {
+            tempoMarking.setText("largo");
+        }
+        else if (isBetween(bpmAmount+1, 50, 51)) {
+            tempoMarking.setText("lento");
+        }
+        else if (isBetween(bpmAmount+1, 52, 54)) {
+            tempoMarking.setText("larghetto");
+        }
+        else if (isBetween(bpmAmount+1, 55, 59)) {
+            tempoMarking.setText("adagio");
+        }
+        else if (isBetween(bpmAmount+1, 60, 70)) {
+            tempoMarking.setText("andante");
+        }
+        else if (isBetween(bpmAmount+1, 88, 92)) {
+            tempoMarking.setText("moderato");
+        }
+        else if (bpmAmount+1 == 96) {
+            tempoMarking.setText("andantino");
+        }
+        else if (isBetween(bpmAmount+1, 104, 119)) {
+            tempoMarking.setText("allegretto");
+        }
+        else if (isBetween(bpmAmount+1, 120, 138)) {
+            tempoMarking.setText("allegro");
+        }
+        else if (isBetween(bpmAmount+1, 160, 167)) {
+            tempoMarking.setText("vivo & vivace");
+        }
+        else if (isBetween(bpmAmount+1, 168, 175)) {
+            tempoMarking.setText("presto");
+        }
+        else if (bpmAmount+1 == 176) {
+            tempoMarking.setText("presto vivacissimo");
+        }
+        else if (isBetween(bpmAmount+1, 177, 199)) {
+            tempoMarking.setText("presto");
+        }
+        else if (bpmAmount+1>=200) {
+            tempoMarking.setText("prestissimo");
+        }
+        else if (bpmAmount+1<=0){
+            tempoMarking.setText("BPM cannot be below 1");
+        }
+        else{
+            tempoMarking.setText("");
+        }
+
+
     }
 
     @Override
@@ -181,6 +252,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 if(isPlaying) {
                     startTimer();
                 }
+                System.out.println(bpmAmount);
+                setTempoMarking();
                 break;
 
             case R.id.decrementButton:
@@ -192,22 +265,21 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 if(isPlaying) {
                     startTimer();
                 }
+                setTempoMarking();
                 break;
 
             case R.id.pausePlayButton:
                 if(isPlaying){
                     this.stopTimer();
-                    isPlaying=false;
                 }
                 else{
                     this.startTimer();
-                    isPlaying=true;
                 }
                 Toast.makeText(MainActivity.this, "pausePlayButton onClick test", Toast.LENGTH_SHORT).show();
                 break;
 
             case R.id.tapButton:
-
+                // ustawic bpm na podstawie tylko 2 klikniec - czas miedzy pierwszym a drugim klinieciem to bpm, po drugim kliknieciu resetuje sie funkcja i przycisk jest gotowy na ponowne wystukanie tempa
                 Toast.makeText(MainActivity.this, "tapButton onClick test", Toast.LENGTH_SHORT).show();
                 break;
 
@@ -219,70 +291,68 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             case R.id.importButton: //pierwsze klikniecie importuje baze i wlacza 3 przyciski do sterowania, kolejne klikniecie zwija przyciski
                 Toast.makeText(MainActivity.this, "importButton onClick test", Toast.LENGTH_SHORT).show();
                 if(!importFlag) {
-                    this.stopTimer();
-                    isPlaying=false;
 
+                    this.stopTimer();
                     readSongsData(); // funkcja wczytujaca piosenki z tempem z pliku csv
                     previousSongButton.setEnabled(true);
                     nextSongButton.setEnabled(true);
                     songName.setEnabled(true);
                     songName.setTextColor(Color.BLACK);
                     importFlag = true;
+
                     setNewBpmAndName();
 
-                    this.startTimer();
-                    isPlaying=true;
+                    bpmAmount = Integer.valueOf(bpmEditTextInc.getText().toString()).intValue();
+                    setTempoMarking();
+
                 }
                 else{
+
                     previousSongButton.setEnabled(false);
                     nextSongButton.setEnabled(false);
                     songName.setEnabled(false);
                     songName.setTextColor(Color.rgb(136,136,136));
                     importFlag = false;
-
                     this.stopTimer();
-                    isPlaying=false;
                 }
                 break;
 
             case R.id.previousSongButton:
                 Toast.makeText(MainActivity.this, "previousSongButton onClick test", Toast.LENGTH_SHORT).show();
+
+                this.stopTimer();
+
                 if(currentSongNo == 0){
-                    this.stopTimer();
-                    isPlaying=false;
                     currentSongNo = (importedSongs.toArray().length-1);
-                    setNewBpmAndName();
-                    this.startTimer();
-                    isPlaying=true;
                 }
                 else{
-                    this.stopTimer();
-                    isPlaying=false;
                     currentSongNo--;
-                    setNewBpmAndName();
-                    this.startTimer();
-                    isPlaying=true;
                 }
+
+                setNewBpmAndName();
+
+                bpmAmount = Integer.valueOf(bpmEditTextInc.getText().toString()).intValue();
+                setTempoMarking();
+
                 break;
 
             case R.id.nextSongButton:
                 Toast.makeText(MainActivity.this, "nextSongButton onClick test", Toast.LENGTH_SHORT).show();
+
+                this.stopTimer();
+
                 if(currentSongNo == (importedSongs.toArray().length-1)){
-                    this.stopTimer();
-                    isPlaying=false;
                     currentSongNo = 0;
-                    setNewBpmAndName();
-                    this.startTimer();
-                    isPlaying=true;
                 }
                 else{
-                    this.stopTimer();
-                    isPlaying=false;
                     currentSongNo++;
-                    setNewBpmAndName();
-                    this.startTimer();
-                    isPlaying=true;
                 }
+
+                setNewBpmAndName();
+
+                bpmAmount = Integer.valueOf(bpmEditTextInc.getText().toString()).intValue();
+                setTempoMarking();
+
                 break;
 
             default:
