@@ -3,8 +3,17 @@
   <component name="DesignSurface">
     <option name="filePathToZoomLevelMap">
       <map>
+        <entry key="..\:/AndroidStudioProjects/Metronom/app/src/main/res/drawable-v24/ic_launcher_foreground.xml" value="0.213" />
+        <entry key="..\:/AndroidStudioProjects/Metronom/app/src/main/res/drawable/ic_baseline_settings_24.xml" value="0.213" />
+        <entry key="..\:/AndroidStudioProjects/Metronom/app/src/main/res/drawable/ic_launcher_background.xml" value="0.213" />
         <entry key="..\:/AndroidStudioProjects/Metronom/app/src/main/res/drawable/textborder.xml" value="0.213" />
         <entry key="..\:/AndroidStudioProjects/Metronom/app/src/main/res/layout/activity_main.xml" value="0.33" />
+        <entry key="..\:/AndroidStudioProjects/Metronom/app/src/main/res/layout/activity_settings.xml" value="0.3416666666666667" />
+        <entry key="..\:/AndroidStudioProjects/Metronom/app/src/main/res/layout/settings_activity.xml" value="0.3416666666666667" />
+        <entry key="..\:/AndroidStudioProjects/Metronom/app/src/main/res/menu/toolbaricons.xml" value="0.3416666666666667" />
+        <entry key="..\:/AndroidStudioProjects/Metronom/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml" value="0.18" />
+        <entry key="..\:/AndroidStudioProjects/Metronom/app/src/main/res/xml/preferences.xml" value="0.3416666666666667" />
+        <entry key="..\:/AndroidStudioProjects/Metronom/app/src/main/res/xml/root_preferences.xml" value="0.3416666666666667" />
       </map>
     </option>
   </component>

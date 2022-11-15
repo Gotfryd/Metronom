@@ -1,12 +1,25 @@
 package pl.pwr.metronom;
 
-import androidx.appcompat.app.AppCompatActivity;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.ActionBar;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
+import androidx.preference.PreferenceManager;
+import android.Manifest;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.media.MediaPlayer;
 import android.os.Bundle;
+import android.os.Environment;
 import android.util.Log;
 import android.view.KeyEvent;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
@@ -14,11 +27,13 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.common.base.Stopwatch;
+
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
@@ -28,13 +43,20 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     boolean isPlaying = false;
     boolean importFlag = false;
+    boolean firstTap = true;
+    boolean darkTheme;
     int bpmAmount;
     int currentSongNo = 0;
-    String tempoName;
+    int tapCounter = 0;
+    private int STORAGE_PERMISSION_CODE = 1;
+    long summedTapsTime;
+    long averageTapsTime;
 
     MediaPlayer tickSound;;
     Timer tickTimer;
     TimerTask tickTone;
+
+    Stopwatch tapStopwatch;
 
     TextView tempoMarking;
     TextView songName;
@@ -91,9 +113,21 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         bpmAmount = Integer.valueOf(bpmEditTextInc.getText().toString()).intValue(); // pierwsze i jednokrotne przypisanie wartosci do tej zmiennej zeby tempoMarking zadzialalo poprawnie
         setTempoMarking(); // jednokrotne wykonanie funkcji zeby ustawila sie nazwa tempa po wlaczeniu aplikacji (na samym starcie)
 
+        ActionBar actionBar = getSupportActionBar();
+        actionBar.setTitle("Metronome");
+
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext()); // uzyskaj plik w ktorym zapisane sa dane z ustawien
+        boolean darkTheme = prefs.getBoolean("dark_theme_switch", false); // pobierz dane z ustawien
+        String languageSelected = prefs.getString("language_list", "en_EN");
+// zrobic deklaracje przed onCreate a tutaj inicjalizacje
+        Toast.makeText(MainActivity.this, darkTheme + "", Toast.LENGTH_SHORT).show(); // dodac boolean isDarkTheme, usedLanguage, usedEffect
+        prefs.edit().putBoolean("dark_theme_switch", true).apply(); // zmien ustawienia          na koncu mozna uzyc .commit()
+        darkTheme = prefs.getBoolean("dark_theme_switch", false);
+        Toast.makeText(MainActivity.this, darkTheme + "", Toast.LENGTH_SHORT).show();
+
+
         tickSound = MediaPlayer.create(this, R.raw.tickeffect);
         tickTimer = new Timer("metronomeCounter", true);
-
 
 
         tickTone = new TimerTask(){
@@ -118,39 +152,106 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
         });
 
+        tapButton.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View view) { // resetuje dane uzyskane przez klikanie przycisku "Tap"
+                Toast.makeText(MainActivity.this, "long click test", Toast.LENGTH_SHORT).show();
+
+                firstTap = true;
+
+                summedTapsTime = 0;
+                averageTapsTime = 0;
+
+                return false;
+            }
+        });
+
+    }
+// koniec onCreate
+
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+
+        getMenuInflater().inflate(R.menu.menu_item, menu);
+        return super.onCreateOptionsMenu(menu);
     }
 
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
 
-    public void readSongsData() {
-        InputStream istream = getResources().openRawResource(R.raw.songsdata);
-        BufferedReader reader = new BufferedReader(
-                new InputStreamReader(istream, Charset.forName("UTF-8"))
-        );
+        switch (item.getItemId())
+        {
+            case R.id.action_settings:
+                Toast.makeText(MainActivity.this, "settings selected test", Toast.LENGTH_SHORT).show();
+                startActivity(new Intent(this, SettingsActivity.class));
+                break;
 
-        String line = "";
+        }
+        return super.onOptionsItemSelected(item);
+    }
 
-        try {
-            reader.readLine();    //pomin naglowek pliku csv (Wykonawca, Tytul, Tempo(BPM)
-
-            while ((line = reader.readLine()) != null) {
-                Log.d("MyActivity", "Line: " + line);
-                String[] tokens = line.split(","); // Oddziel znakiem ,
-
-                //odczytaj dane
-                SongsList sample = new SongsList();
-                sample.setComposer(tokens[0]);                  //
-                sample.setTitle(tokens[1]);                     // mozna zrobic ostrzezenie, ze rekord jest pusty w pliku csv
-                sample.setTrackBpm(Short.parseShort(tokens[2]));//
-                importedSongs.add(sample);
-
-                Log.d("My Activity", "Just created: " + sample);
-            }
-        } catch (IOException e) {
-            Log.wtf("My Activity", "Error reading data file on line" + line, e);
-            e.printStackTrace();
+    private boolean isExternalStorageReadable() {
+        if (Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())
+                || Environment.MEDIA_MOUNTED_READ_ONLY.equals(Environment.getExternalStorageState())) {
+            Toast.makeText(MainActivity.this, "External storage is readable", Toast.LENGTH_SHORT).show();
+            return true;
+        }
+        else{
+            Toast.makeText(MainActivity.this, "External storage is not readable", Toast.LENGTH_SHORT).show();
+            return false;
         }
     }
 
+    public void readSongsData() {
+
+        if(isExternalStorageReadable()){
+
+            StringBuilder sb = new StringBuilder();
+            String line = "";
+
+            try{
+
+                String fileName = "songsdata.csv";
+                String baseDir = Environment.getExternalStorageDirectory().getAbsolutePath();
+                String pathDir = baseDir + "/Download/";
+
+                File csvFile = new File(pathDir + File.separator + fileName);
+
+                // dodac if na wszystko ponizej jezeli plik istnieje, bo jak nie istnieje to niech nie laduje bazy i wyswietli komunikat ze failed to load database
+
+                FileInputStream fis = new FileInputStream(csvFile);
+
+                InputStreamReader isr = new InputStreamReader(fis);
+                BufferedReader buff = new BufferedReader(isr);
+                buff.readLine();
+                //String line = null; // gdyby String line wyzej nie zadzialal
+
+                    while((line = buff.readLine()) != null){
+                        Log.d("MyActivity", "Line: " + line);
+                        String[] tokens = line.split(","); // Oddziel znakiem ,
+
+                        //odczytaj dane
+                        SongsList sample = new SongsList();
+                        sample.setComposer(tokens[0]);                  //
+                        sample.setTitle(tokens[1]);                     // mozna zrobic ostrzezenie, ze rekord jest pusty w pliku csv
+                        sample.setTrackBpm(Short.parseShort(tokens[2]));//
+                        importedSongs.add(sample);
+                        Log.d("My Activity", "Just created: " + sample);
+                    }
+                    fis.close();
+            }
+
+            catch(IOException e){
+                Log.wtf("My Activity", "Error reading data file on line" + line, e);
+                e.printStackTrace();
+            }
+
+        }
+        else{
+            Toast.makeText(MainActivity.this, "Cannot read from external storage", Toast.LENGTH_SHORT).show();
+        }
+    }
 
     public void stopTimer(){
         tickTimer.cancel();
@@ -166,7 +267,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
         };
         tickTimer.scheduleAtFixedRate(tickTone, 1000, 60000/Integer.valueOf(bpmEditTextInc.getText().toString()));
-        isPlaying=true;
+        isPlaying=true; //IllegalArgumentException:	if delay < 0, or delay + System.currentTimeMillis() < 0, or period <= 0 (period musi trwac przynajmniej 1 ms)
     }
 
     public void setNewBpmAndName(){
@@ -179,55 +280,58 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     public void setTempoMarking(){
-        if (isBetween(bpmAmount+1, 1, 29)) {
+
+        bpmAmount = Integer.valueOf(bpmEditTextInc.getText().toString()).intValue();
+
+        if (isBetween(bpmAmount, 1, 29)) {
             tempoMarking.setText("Larghissimo");
         }
-        else if (isBetween(bpmAmount+1, 30, 39)) {
+        else if (isBetween(bpmAmount, 30, 39)) {
             tempoMarking.setText("Grave");
         }
-        else if (isBetween(bpmAmount+1, 40, 49)) {
+        else if (isBetween(bpmAmount, 40, 49)) {
             tempoMarking.setText("largo");
         }
-        else if (isBetween(bpmAmount+1, 50, 51)) {
+        else if (isBetween(bpmAmount, 50, 51)) {
             tempoMarking.setText("lento");
         }
-        else if (isBetween(bpmAmount+1, 52, 54)) {
+        else if (isBetween(bpmAmount, 52, 54)) {
             tempoMarking.setText("larghetto");
         }
-        else if (isBetween(bpmAmount+1, 55, 59)) {
+        else if (isBetween(bpmAmount, 55, 59)) {
             tempoMarking.setText("adagio");
         }
-        else if (isBetween(bpmAmount+1, 60, 70)) {
+        else if (isBetween(bpmAmount, 60, 70)) {
             tempoMarking.setText("andante");
         }
-        else if (isBetween(bpmAmount+1, 88, 92)) {
+        else if (isBetween(bpmAmount, 88, 92)) {
             tempoMarking.setText("moderato");
         }
-        else if (bpmAmount+1 == 96) {
+        else if (bpmAmount == 96) {
             tempoMarking.setText("andantino");
         }
-        else if (isBetween(bpmAmount+1, 104, 119)) {
+        else if (isBetween(bpmAmount, 104, 119)) {
             tempoMarking.setText("allegretto");
         }
-        else if (isBetween(bpmAmount+1, 120, 138)) {
+        else if (isBetween(bpmAmount, 120, 138)) {
             tempoMarking.setText("allegro");
         }
-        else if (isBetween(bpmAmount+1, 160, 167)) {
+        else if (isBetween(bpmAmount, 160, 167)) {
             tempoMarking.setText("vivo & vivace");
         }
-        else if (isBetween(bpmAmount+1, 168, 175)) {
+        else if (isBetween(bpmAmount, 168, 175)) {
             tempoMarking.setText("presto");
         }
-        else if (bpmAmount+1 == 176) {
+        else if (bpmAmount == 176) {
             tempoMarking.setText("presto vivacissimo");
         }
-        else if (isBetween(bpmAmount+1, 177, 199)) {
+        else if (isBetween(bpmAmount, 177, 199)) {
             tempoMarking.setText("presto");
         }
-        else if (bpmAmount+1>=200) {
+        else if (bpmAmount>=200) {
             tempoMarking.setText("prestissimo");
         }
-        else if (bpmAmount+1<=0){
+        else if (bpmAmount<=0){
             tempoMarking.setText("BPM cannot be below 1");
         }
         else{
@@ -236,6 +340,28 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
 
     }
+
+    private void requestStoragePermission() {
+        if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.READ_EXTERNAL_STORAGE)) {
+            ActivityCompat.requestPermissions(MainActivity.this, new String[] {Manifest.permission.READ_EXTERNAL_STORAGE}, STORAGE_PERMISSION_CODE);
+        }
+        else {
+            ActivityCompat.requestPermissions(this, new String[] {Manifest.permission.READ_EXTERNAL_STORAGE}, STORAGE_PERMISSION_CODE);
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == STORAGE_PERMISSION_CODE) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Toast.makeText(this, "Permission GRANTED", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(this, "Permission DENIED", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
 
     @Override
     public void onClick(View view) {
@@ -281,6 +407,24 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             case R.id.tapButton:
                 // ustawic bpm na podstawie tylko 2 klikniec - czas miedzy pierwszym a drugim klinieciem to bpm, po drugim kliknieciu resetuje sie funkcja i przycisk jest gotowy na ponowne wystukanie tempa
                 Toast.makeText(MainActivity.this, "tapButton onClick test", Toast.LENGTH_SHORT).show();
+                tapCounter++;
+
+                if(firstTap){
+                    tapStopwatch = Stopwatch.createUnstarted();
+                    tapStopwatch.start();
+                    firstTap = false;
+                }
+                else{
+                    tapStopwatch.stop();
+                    System.out.println("time: " + tapStopwatch); // formatted string like "12.3 ms"
+                    summedTapsTime =+ tapStopwatch.elapsed(MILLISECONDS);
+                    averageTapsTime = summedTapsTime/tapCounter;
+                    bpmEditTextInc.setText(String.valueOf((60000/averageTapsTime))); //wylicz srednia w ms
+
+                    tapStopwatch.start();
+
+                }
+
                 break;
 
             case R.id.recordButton:
@@ -290,19 +434,24 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             case R.id.importButton: //pierwsze klikniecie importuje baze i wlacza 3 przyciski do sterowania, kolejne klikniecie zwija przyciski
                 Toast.makeText(MainActivity.this, "importButton onClick test", Toast.LENGTH_SHORT).show();
-                if(!importFlag) {
 
+                if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
+                    Toast.makeText(MainActivity.this, "You have already granted this permission!", Toast.LENGTH_SHORT).show();
+                }
+                else {
+                    requestStoragePermission();
+                }
+
+                if(!importFlag) {
                     this.stopTimer();
-                    readSongsData(); // funkcja wczytujaca piosenki z tempem z pliku csv
+
+                    readSongsData();  // funkcja wczytujaca piosenki z tempem z pliku csv
                     previousSongButton.setEnabled(true);
                     nextSongButton.setEnabled(true);
                     songName.setEnabled(true);
                     songName.setTextColor(Color.BLACK);
                     importFlag = true;
-
                     setNewBpmAndName();
-
-                    bpmAmount = Integer.valueOf(bpmEditTextInc.getText().toString()).intValue();
                     setTempoMarking();
 
                 }
