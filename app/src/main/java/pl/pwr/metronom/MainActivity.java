@@ -3,8 +3,10 @@ package pl.pwr.metronom;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatDelegate;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.preference.PreferenceManager;
@@ -20,6 +22,7 @@ import android.util.Log;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
@@ -32,6 +35,7 @@ import com.google.common.base.Stopwatch;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
@@ -44,11 +48,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     boolean isPlaying = false;
     boolean importFlag = false;
     boolean firstTap = true;
+    boolean successImport = false;
     boolean darkTheme;
     int bpmAmount;
     int currentSongNo = 0;
     int tapCounter = 0;
     private int STORAGE_PERMISSION_CODE = 1;
+    final int SETTINGS_ACTIVITY = 1;
     long summedTapsTime;
     long averageTapsTime;
 
@@ -74,10 +80,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     List<SongsList> importedSongs = new ArrayList<>();
 
+    SharedPreferences SP;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        setAppTheme();
         setContentView(R.layout.activity_main);
 
         tempoMarking = (TextView) findViewById(R.id.tempoMarking);
@@ -114,16 +122,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         setTempoMarking(); // jednokrotne wykonanie funkcji zeby ustawila sie nazwa tempa po wlaczeniu aplikacji (na samym starcie)
 
         ActionBar actionBar = getSupportActionBar();
-        actionBar.setTitle("Metronome");
+        actionBar.setTitle("Metronome @string");
 
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext()); // uzyskaj plik w ktorym zapisane sa dane z ustawien
-        boolean darkTheme = prefs.getBoolean("dark_theme_switch", false); // pobierz dane z ustawien
-        String languageSelected = prefs.getString("language_list", "en_EN");
-// zrobic deklaracje przed onCreate a tutaj inicjalizacje
-        Toast.makeText(MainActivity.this, darkTheme + "", Toast.LENGTH_SHORT).show(); // dodac boolean isDarkTheme, usedLanguage, usedEffect
-        prefs.edit().putBoolean("dark_theme_switch", true).apply(); // zmien ustawienia          na koncu mozna uzyc .commit()
-        darkTheme = prefs.getBoolean("dark_theme_switch", false);
-        Toast.makeText(MainActivity.this, darkTheme + "", Toast.LENGTH_SHORT).show();
+//        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext()); // uzyskaj plik w ktorym zapisane sa dane z ustawien
+//        boolean darkTheme = prefs.getBoolean("dark_theme_switch", false); // pobierz dane z ustawien
+//        String languageSelected = prefs.getString("language_list", "en_EN");
+//// zrobic deklaracje przed onCreate a tutaj inicjalizacje
+//        Toast.makeText(MainActivity.this, darkTheme + "", Toast.LENGTH_SHORT).show(); // dodac boolean isDarkTheme, usedLanguage, usedEffect
+//        prefs.edit().putBoolean("dark_theme_switch", true).apply(); // zmien ustawienia          na koncu mozna uzyc .commit()
+//        darkTheme = prefs.getBoolean("dark_theme_switch", false);
+//        Toast.makeText(MainActivity.this, darkTheme + "", Toast.LENGTH_SHORT).show();
 
 
         tickSound = MediaPlayer.create(this, R.raw.tickeffect);
@@ -172,7 +180,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-
         getMenuInflater().inflate(R.menu.menu_item, menu);
         return super.onCreateOptionsMenu(menu);
     }
@@ -184,28 +191,49 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         {
             case R.id.action_settings:
                 Toast.makeText(MainActivity.this, "settings selected test", Toast.LENGTH_SHORT).show();
-                startActivity(new Intent(this, SettingsActivity.class));
+                startActivityForResult(new Intent(this, SettingsActivity.class), SETTINGS_ACTIVITY);
                 break;
 
         }
         return super.onOptionsItemSelected(item);
     }
 
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if(requestCode == SETTINGS_ACTIVITY){
+            this.recreate();
+        }
+    }
+
+    public void setAppTheme(){
+        SP = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
+
+        if(SP.getBoolean("dark_theme_switch", false)){
+            setTheme(R.style.DarkTheme);
+            System.out.println("ustawilem DarkTheme");
+        }
+        else{
+            setTheme(R.style.LightTheme);
+            System.out.println("ustawilem LightTheme");
+        }
+    }
+
     private boolean isExternalStorageReadable() {
         if (Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())
                 || Environment.MEDIA_MOUNTED_READ_ONLY.equals(Environment.getExternalStorageState())) {
-            Toast.makeText(MainActivity.this, "External storage is readable", Toast.LENGTH_SHORT).show();
+           // Toast.makeText(MainActivity.this, "External storage is readable", Toast.LENGTH_SHORT).show();
             return true;
         }
         else{
-            Toast.makeText(MainActivity.this, "External storage is not readable", Toast.LENGTH_SHORT).show();
+          //  Toast.makeText(MainActivity.this, "External storage is not readable", Toast.LENGTH_SHORT).show();
             return false;
         }
     }
 
-    public void readSongsData() {
 
-        if(isExternalStorageReadable()){
+    public boolean importAndDataRead() {
 
             StringBuilder sb = new StringBuilder();
             String line = "";
@@ -218,10 +246,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                 File csvFile = new File(pathDir + File.separator + fileName);
 
-                // dodac if na wszystko ponizej jezeli plik istnieje, bo jak nie istnieje to niech nie laduje bazy i wyswietli komunikat ze failed to load database
-
                 FileInputStream fis = new FileInputStream(csvFile);
-
                 InputStreamReader isr = new InputStreamReader(fis);
                 BufferedReader buff = new BufferedReader(isr);
                 buff.readLine();
@@ -239,18 +264,22 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         importedSongs.add(sample);
                         Log.d("My Activity", "Just created: " + sample);
                     }
+
                     fis.close();
             }
 
+            catch(FileNotFoundException e){
+                System.out.println("File doesn't exist!");
+                e.printStackTrace();
+                return false;
+            }
             catch(IOException e){
                 Log.wtf("My Activity", "Error reading data file on line" + line, e);
                 e.printStackTrace();
+                return false;
             }
 
-        }
-        else{
-            Toast.makeText(MainActivity.this, "Cannot read from external storage", Toast.LENGTH_SHORT).show();
-        }
+            return true;
     }
 
     public void stopTimer(){
@@ -355,9 +384,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == STORAGE_PERMISSION_CODE) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                Toast.makeText(this, "Permission GRANTED", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "Storage permission granted. Please press the import button again", Toast.LENGTH_SHORT).show();
             } else {
-                Toast.makeText(this, "Permission DENIED", Toast.LENGTH_SHORT).show();
+                Toast.makeText(MainActivity.this, "You must grant storage permission to import data", Toast.LENGTH_SHORT).show();
             }
         }
     }
@@ -433,37 +462,48 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 break;
 
             case R.id.importButton: //pierwsze klikniecie importuje baze i wlacza 3 przyciski do sterowania, kolejne klikniecie zwija przyciski
-                Toast.makeText(MainActivity.this, "importButton onClick test", Toast.LENGTH_SHORT).show();
 
+                Toast.makeText(MainActivity.this, "importButton onClick test", Toast.LENGTH_SHORT).show();
                 if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
-                    Toast.makeText(MainActivity.this, "You have already granted this permission!", Toast.LENGTH_SHORT).show();
+
+                    if (isExternalStorageReadable()) {
+
+                        if (importAndDataRead()) {
+
+                            if (!importFlag) {
+                                Toast.makeText(MainActivity.this, "Database imported successfully! Tap again to hide imported songs", Toast.LENGTH_SHORT).show();
+                                this.stopTimer();
+                                importAndDataRead();  // funkcja wczytujaca piosenki z tempem z pliku csv
+                                previousSongButton.setEnabled(true);
+                                nextSongButton.setEnabled(true);
+                                songName.setEnabled(true);
+                                songName.setTextColor(Color.BLACK);
+                                importFlag = true;
+                                setNewBpmAndName();
+                                setTempoMarking();
+                            } else {
+                                previousSongButton.setEnabled(false);
+                                nextSongButton.setEnabled(false);
+                                songName.setEnabled(false);
+                                songName.setTextColor(Color.rgb(136, 136, 136));
+                                importFlag = false;
+                                this.stopTimer();
+                            }
+                        }
+                        else {
+                            Toast.makeText(MainActivity.this, "Cannot import data. File doesn't exist or it's wrong named or it's wrong formatted", Toast.LENGTH_SHORT).show();
+                        }
+
+                    }
+                    else{
+                        Toast.makeText(MainActivity.this, "Cannot read from external storage", Toast.LENGTH_SHORT).show();
+                    }
                 }
                 else {
                     requestStoragePermission();
                 }
 
-                if(!importFlag) {
-                    this.stopTimer();
 
-                    readSongsData();  // funkcja wczytujaca piosenki z tempem z pliku csv
-                    previousSongButton.setEnabled(true);
-                    nextSongButton.setEnabled(true);
-                    songName.setEnabled(true);
-                    songName.setTextColor(Color.BLACK);
-                    importFlag = true;
-                    setNewBpmAndName();
-                    setTempoMarking();
-
-                }
-                else{
-
-                    previousSongButton.setEnabled(false);
-                    nextSongButton.setEnabled(false);
-                    songName.setEnabled(false);
-                    songName.setTextColor(Color.rgb(136,136,136));
-                    importFlag = false;
-                    this.stopTimer();
-                }
                 break;
 
             case R.id.previousSongButton:
@@ -508,4 +548,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 break;
         }
     }
+
+
 }
