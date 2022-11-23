@@ -162,15 +162,17 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         tapButton.setOnLongClickListener(new View.OnLongClickListener() {
             @Override
-            public boolean onLongClick(View view) { // resetuje dane uzyskane przez klikanie przycisku "Tap"
+            public boolean onLongClick(View view) { // resetruje dane uzyskane przez przytrzymanie przycisku "Tap"
                 Toast.makeText(MainActivity.this, "long click test", Toast.LENGTH_SHORT).show();
-
-                firstTap = true;
 
                 summedTapsTime = 0;
                 averageTapsTime = 0;
+                tapCounter = 0;
+                firstTap = true;
+                bpmEditTextInc.setText(String.valueOf((90)));
+                stopTimer();
 
-                return false;
+                return true;
             }
         });
 
@@ -436,14 +438,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             case R.id.tapButton:
                 // ustawic bpm na podstawie tylko 2 klikniec - czas miedzy pierwszym a drugim klinieciem to bpm, po drugim kliknieciu resetuje sie funkcja i przycisk jest gotowy na ponowne wystukanie tempa
                 Toast.makeText(MainActivity.this, "tapButton onClick test", Toast.LENGTH_SHORT).show();
-                tapCounter++;
 
-                if(firstTap){
+                if(firstTap){ // pierwsze inicjujace klikniecie
+                    System.out.println("first tap triggered");
                     tapStopwatch = Stopwatch.createUnstarted();
                     tapStopwatch.start();
                     firstTap = false;
                 }
                 else{
+                    tapCounter++;
+                    System.out.println("tapCounter++ " + tapCounter);
                     tapStopwatch.stop();
                     System.out.println("time: " + tapStopwatch); // formatted string like "12.3 ms"
                     summedTapsTime =+ tapStopwatch.elapsed(MILLISECONDS);
@@ -451,7 +455,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     bpmEditTextInc.setText(String.valueOf((60000/averageTapsTime))); //wylicz srednia w ms
 
                     tapStopwatch.start();
-
                 }
 
                 break;
