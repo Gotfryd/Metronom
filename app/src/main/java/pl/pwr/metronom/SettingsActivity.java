@@ -1,5 +1,7 @@
 package pl.pwr.metronom;
 
+import static androidx.appcompat.app.AppCompatDelegate.getDefaultNightMode;
+
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
@@ -15,10 +17,10 @@ public class SettingsActivity extends PreferenceActivity implements SharedPrefer
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-
         PreferenceManager.getDefaultSharedPreferences(getBaseContext()).registerOnSharedPreferenceChangeListener(this);
-        setAppTheme();
 
+        setAppTheme(); // nie dziala zmiana motywu ekranu preferences
+        System.out.println("Default night mode = " + getDefaultNightMode());
         super.onCreate(savedInstanceState);
 
         getFragmentManager().beginTransaction().replace(android.R.id.content, new MyPreferenceFragment()).commit();
@@ -27,9 +29,14 @@ public class SettingsActivity extends PreferenceActivity implements SharedPrefer
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String s) {
         Toast.makeText(this, "onSharedPrefChange", Toast.LENGTH_SHORT).show();
-        if (s.equals("dark_theme_switch")){
+       if (s.equals("night_mode_switch")){
             this.recreate();
+           Toast.makeText(this, "recreated", Toast.LENGTH_SHORT).show();
         }
+       else if(s.equals("sound_effects_list")){
+           this.recreate();
+           Toast.makeText(this, "recreated", Toast.LENGTH_SHORT).show();
+       }
     }
 
     public static class MyPreferenceFragment extends PreferenceFragment {
@@ -38,19 +45,20 @@ public class SettingsActivity extends PreferenceActivity implements SharedPrefer
         public void onCreate(@Nullable Bundle savedInstanceState) {
             super.onCreate(savedInstanceState);
             addPreferencesFromResource(R.xml.preferences);
+
         }
     }
 
     public void setAppTheme(){
         SharedPreferences SP = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
 
-        if(SP.getBoolean("dark_theme_switch", false)){
-            setTheme(R.style.DarkTheme);
-            System.out.println("ustawilem DarkTheme");
+        if(SP.getBoolean("night_mode_switch", false)){
+            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
+            System.out.println("wlaczylem tryb nocny");
         }
         else{
-            setTheme(R.style.LightTheme);
-            System.out.println("ustawilem LightTheme");
+            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
+            System.out.println("wlaczylem tryb dzienny");
         }
     }
 }

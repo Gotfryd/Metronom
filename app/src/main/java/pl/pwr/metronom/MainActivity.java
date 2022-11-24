@@ -48,8 +48,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     boolean isPlaying = false;
     boolean importFlag = false;
     boolean firstTap = true;
-    boolean successImport = false;
-    boolean darkTheme;
+
     int bpmAmount;
     int currentSongNo = 0;
     int tapCounter = 0;
@@ -57,6 +56,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     final int SETTINGS_ACTIVITY = 1;
     long summedTapsTime;
     long averageTapsTime;
+
+    String effectName;
 
     MediaPlayer tickSound;;
     Timer tickTimer;
@@ -85,7 +86,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setAppTheme();
+        setAppTheme(); // dziala bez tej funkcji, nie musi jej raczej byc
         setContentView(R.layout.activity_main);
 
         tempoMarking = (TextView) findViewById(R.id.tempoMarking);
@@ -124,6 +125,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         ActionBar actionBar = getSupportActionBar();
         actionBar.setTitle("Metronome @string");
 
+
 //        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext()); // uzyskaj plik w ktorym zapisane sa dane z ustawien
 //        boolean darkTheme = prefs.getBoolean("dark_theme_switch", false); // pobierz dane z ustawien
 //        String languageSelected = prefs.getString("language_list", "en_EN");
@@ -133,10 +135,31 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 //        darkTheme = prefs.getBoolean("dark_theme_switch", false);
 //        Toast.makeText(MainActivity.this, darkTheme + "", Toast.LENGTH_SHORT).show();
 
+        SP = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
+        effectName = SP.getString("sound_effects_list", "soundone");
+        System.out.println("nazwa efektu"+effectName);
 
-        tickSound = MediaPlayer.create(this, R.raw.tickeffect);
+        switch(effectName) {
+            case "soundone":
+                tickSound = MediaPlayer.create(this, R.raw.soundone);
+                break;
+            case "soundtwo":
+                tickSound = MediaPlayer.create(this, R.raw.soundtwo);
+                break;
+            case "soundthree":
+                tickSound = MediaPlayer.create(this, R.raw.soundthree);
+                break;
+            case "soundfour":
+                tickSound = MediaPlayer.create(this, R.raw.soundfour);
+                break;
+            case "soundfive":
+                tickSound = MediaPlayer.create(this, R.raw.soundfive);
+                break;
+            default:
+                tickSound = MediaPlayer.create(this, R.raw.soundone);
+        }
+
         tickTimer = new Timer("metronomeCounter", true);
-
 
         tickTone = new TimerTask(){
             @Override
@@ -192,6 +215,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         switch (item.getItemId())
         {
             case R.id.action_settings:
+                stopTimer();
                 Toast.makeText(MainActivity.this, "settings selected test", Toast.LENGTH_SHORT).show();
                 startActivityForResult(new Intent(this, SettingsActivity.class), SETTINGS_ACTIVITY);
                 break;
@@ -212,13 +236,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public void setAppTheme(){
         SP = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
 
-        if(SP.getBoolean("dark_theme_switch", false)){
-            setTheme(R.style.DarkTheme);
-            System.out.println("ustawilem DarkTheme");
+        if(SP.getBoolean("night_mode_switch", false)){
+            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
+            System.out.println("wlaczylem tryb nocny");
         }
         else{
-            setTheme(R.style.LightTheme);
-            System.out.println("ustawilem LightTheme");
+            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
+            System.out.println("wlaczylem tryb dzienny");
         }
     }
 

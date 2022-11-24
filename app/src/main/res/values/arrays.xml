@@ -5,12 +5,16 @@
         <item>Sound 1 @string</item>
         <item>Sound 2 @string</item>
         <item>Sound 3 @string</item>
+        <item>Sound 4 @string</item>
+        <item>Sound 5 @string</item>
     </string-array>
 
     <string-array name="soundsListValues">
-        <item>sound1mp3</item>
-        <item>sound2mp3</item>
-        <item>sound3mp3</item>
+        <item>soundone</item>
+        <item>soundtwo</item>
+        <item>soundthree</item>
+        <item>soundfour</item>
+        <item>soundfive</item>
     </string-array>
 
     <string-array name="languageList">
