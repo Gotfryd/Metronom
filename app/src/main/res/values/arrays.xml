@@ -2,11 +2,11 @@
 <resources>
 
     <string-array name="soundsList">
-        <item>Sound 1 @string</item>
-        <item>Sound 2 @string</item>
-        <item>Sound 3 @string</item>
-        <item>Sound 4 @string</item>
-        <item>Sound 5 @string</item>
+        <item>@string/soundOne</item>
+        <item>@string/soundTwo</item>
+        <item>@string/soundThree</item>
+        <item>@string/soundFour</item>
+        <item>@string/soundFive</item>
     </string-array>
 
     <string-array name="soundsListValues">
@@ -18,15 +18,15 @@
     </string-array>
 
     <string-array name="languageList">
-        <item>@string/polish</item>
         <item>@string/english</item>
+        <item>@string/polish</item>
         <item>@string/german</item>
     </string-array>
 
     <string-array name="languageListValues">
-        <item>PL_pl</item>
-        <item>EN_en</item>
-        <item>DE_de</item>
+        <item>en</item>
+        <item>pl</item>
+        <item>de</item>
     </string-array>
 
 

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Metronom</string>
+    <string name="title_activity_settings">SettingsActivity</string>
+    <string name="settings_icon">Settings</string>
+    <string name="actionBarTitle">Metronom</string>
+    <string name="preferenceCategoryOne">Category</string>
+    <string name="preferenceCategoryTwo">Dzwieks</string>
+    <string name="preferenceCategoryThree">Language</string>
+    <string name="darkTheme">Dark Theme</string>
+    <string name="darkThemeSummary">Zmień kolory interfejsu na ciemne ŹĄśŻó</string>
+    <string name="soundEffect">Change metronome sound effect</string>
+    <string name="soundEffectSummary">Choose one of the metronome sound effects from the list</string>
+    <string name="changeLanguage">Change language</string>
+    <string name="changeLanguageSummary">Select language to change</string>
+
+
+    <string name="soundOne">Dźwięk 1</string>
+    <string name="soundTwo">Dźwięk 2</string>
+    <string name="soundThree">Dźwięk 3</string>
+    <string name="soundFour">Dźwięk 4</string>
+    <string name="soundFive">Dźwięk 5</string>
+    <string name="english">English</string>
+    <string name="polish">Polski</string>
+    <string name="german">Deutsch</string>
+    <string name="composerTitle">Composer - Title</string>
+
+</resources>

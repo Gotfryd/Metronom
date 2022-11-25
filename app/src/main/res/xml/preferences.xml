@@ -1,35 +1,36 @@
 <?xml version="1.0" encoding="utf-8"?>
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <PreferenceCategory android:title="Category uzyc @stringa">
+    <PreferenceCategory android:title="@string/preferenceCategoryOne">
 
         <SwitchPreference
             android:defaultValue="false"
             android:key="night_mode_switch"
-            android:title="Ciemny motyw @string"
-            android:summary="Change interface colors to dark" />
+            android:title="@string/darkTheme"
+            android:summary="@string/darkThemeSummary" />
 
     </PreferenceCategory>
 
-    <PreferenceCategory android:title="Dzwieks @string">
+    <PreferenceCategory android:title="@string/preferenceCategoryTwo">
 
         <ListPreference
             android:defaultValue="1"
             android:entries="@array/soundsList"
             android:entryValues="@array/soundsListValues"
             android:key="sound_effects_list"
-            android:summary="Choose one of the metronome sound effects from the list"
-            android:title="Dzwiek metronomu @string" />
+            android:summary="@string/soundEffectSummary"
+            android:title="@string/soundEffect" />
     </PreferenceCategory>
 
-    <PreferenceCategory android:title="Language @string">
+    <PreferenceCategory android:title="@string/preferenceCategoryThree">
 
         <ListPreference
-            android:defaultValue="EN_en"
+            android:defaultValue="en"
             android:entries="@array/languageList"
             android:entryValues="@array/languageListValues"
             android:key="language_list"
-            android:title="Change language @string" />
+            android:summary="@string/changeLanguageSummary"
+            android:title="@string/changeLanguage" />
 
     </PreferenceCategory>
 

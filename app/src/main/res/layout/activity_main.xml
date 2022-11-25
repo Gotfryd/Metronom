@@ -1,24 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
-
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".MainActivity">
+    tools:context=".MainActivity"
+    android:id="@+id/linearLayout"
+    android:background="@drawable/layout_border">
 
-    <TextView
-        android:id="@+id/bpmString"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="BPM"
-        android:textSize="30sp"
-        android:textStyle="bold"
-        app:layout_constraintBottom_toTopOf="@+id/pausePlayButton"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.15" />
+<androidx.constraintlayout.widget.ConstraintLayout
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:id="@+id/constraintLayout"
+    tools:context=".MainActivity">
 
     <EditText
         android:id="@+id/bpmInteger"
@@ -26,110 +20,109 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="90"
-        android:textSize="30sp"
+        android:textSize="48sp"
         android:textStyle="bold"
-        app:layout_constraintBottom_toTopOf="@+id/tempoMarking"
+        app:layout_constraintBottom_toTopOf="@+id/pausePlayButton"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/bpmString"
+        app:layout_constraintTop_toTopOf="parent"
         android:imeOptions="actionDone" />
 
     <TextView
         android:id="@+id/tempoMarking"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text=""
-        app:layout_constraintBottom_toTopOf="@+id/pausePlayButton"
+        android:textSize="16sp"
+        app:layout_constraintBottom_toTopOf="@+id/bpmInteger"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/bpmInteger" />
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="1"/>
 
-    <Button
+    <ImageButton
         android:id="@+id/pausePlayButton"
         android:layout_width="100dp"
         android:layout_height="100dp"
-        android:text="Pause/Play"
+        android:src="@drawable/ic_play"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintVertical_bias="0.45" />
 
-    <Button
+    <ImageButton
         android:id="@+id/decrementButton"
-        android:layout_width="50dp"
+        android:layout_width="60dp"
         android:layout_height="60dp"
-        android:text="-"
+        android:src="@drawable/ic_remove"
         app:layout_constraintBottom_toTopOf="@+id/pausePlayButton"
         app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toLeftOf="@id/bpmString"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.35" />
+        app:layout_constraintRight_toLeftOf="@id/bpmInteger"
+        app:layout_constraintTop_toTopOf="parent" />
 
-    <Button
+    <ImageButton
         android:id="@+id/incrementButton"
-        android:layout_width="50dp"
+        android:layout_width="60dp"
         android:layout_height="60dp"
-        android:text="+"
+        android:src="@drawable/ic_add"
+
         app:layout_constraintBottom_toTopOf="@+id/pausePlayButton"
-        app:layout_constraintLeft_toRightOf="@id/bpmString"
+        app:layout_constraintLeft_toRightOf="@id/bpmInteger"
         app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.35" />
+        app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
         android:id="@+id/songName"
         android:layout_width="260dp"
         android:layout_height="50dp"
         android:gravity="center"
-        android:text="Composer - Title"
-        android:textColor="#888888"
+        android:text="@string/composerTitle"
+        android:enabled="false"
+        android:textSize="16sp"
         app:layout_constraintBottom_toTopOf="@+id/tapButton"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toBottomOf="@id/pausePlayButton"
         app:layout_constraintVertical_bias="0.65" />
 
-    <Button
+    <ImageButton
         android:id="@+id/previousSongButton"
         android:layout_width="50dp"
         android:layout_height="50dp"
-        android:text="P"
+        android:src="@drawable/ic_arrow_left"
         app:layout_constraintBottom_toTopOf="@+id/tapButton"
         app:layout_constraintRight_toLeftOf="@+id/songName"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintTop_toBottomOf="@id/pausePlayButton"
-        android:enabled="false"
         app:layout_constraintVertical_bias="0.65" />
 
-    <Button
+    <ImageButton
         android:id="@+id/nextSongButton"
         android:layout_width="50dp"
         android:layout_height="50dp"
-        android:text="N"
+        android:src="@drawable/ic_arrow_right"
         app:layout_constraintBottom_toTopOf="@+id/tapButton"
         app:layout_constraintLeft_toRightOf="@+id/songName"
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toBottomOf="@id/pausePlayButton"
-        android:enabled="false"
         app:layout_constraintVertical_bias="0.65" />
 
-    <Button
+    <ImageButton
         android:id="@+id/tapButton"
         android:layout_width="160dp"
         android:layout_height="160dp"
-        android:text="TAP \n\n HOLD TO RESET"
+        android:src="@drawable/ic_touch"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toBottomOf="@id/pausePlayButton"
         app:layout_constraintVertical_bias="0.8" />
 
-    <Button
+    <ImageButton
         android:id="@+id/recordButton"
         android:layout_width="100dp"
         android:layout_height="160dp"
-        android:text="RECORD"
+        android:src="@drawable/ic_mic"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintHorizontal_bias="0.461"
         app:layout_constraintLeft_toLeftOf="parent"
@@ -137,11 +130,11 @@
         app:layout_constraintTop_toBottomOf="@id/pausePlayButton"
         app:layout_constraintVertical_bias="0.8" />
 
-    <Button
+    <ImageButton
         android:id="@+id/importButton"
         android:layout_width="100dp"
         android:layout_height="160dp"
-        android:text="IMPORT"
+        android:src="@drawable/ic_import"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintLeft_toRightOf="@id/tapButton"
         app:layout_constraintRight_toRightOf="parent"
@@ -150,3 +143,4 @@
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>
+</LinearLayout>

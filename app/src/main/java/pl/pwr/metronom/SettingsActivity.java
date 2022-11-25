@@ -18,11 +18,9 @@ public class SettingsActivity extends PreferenceActivity implements SharedPrefer
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         PreferenceManager.getDefaultSharedPreferences(getBaseContext()).registerOnSharedPreferenceChangeListener(this);
-
         setAppTheme(); // nie dziala zmiana motywu ekranu preferences
         System.out.println("Default night mode = " + getDefaultNightMode());
         super.onCreate(savedInstanceState);
-
         getFragmentManager().beginTransaction().replace(android.R.id.content, new MyPreferenceFragment()).commit();
     }
 
@@ -30,11 +28,15 @@ public class SettingsActivity extends PreferenceActivity implements SharedPrefer
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String s) {
         Toast.makeText(this, "onSharedPrefChange", Toast.LENGTH_SHORT).show();
        if (s.equals("night_mode_switch")){
-            this.recreate();
+           recreate();
            Toast.makeText(this, "recreated", Toast.LENGTH_SHORT).show();
         }
        else if(s.equals("sound_effects_list")){
-           this.recreate();
+           recreate();
+           Toast.makeText(this, "recreated", Toast.LENGTH_SHORT).show();
+       }
+       else if(s.equals("language_list")){
+           recreate();
            Toast.makeText(this, "recreated", Toast.LENGTH_SHORT).show();
        }
     }

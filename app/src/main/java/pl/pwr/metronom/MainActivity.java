@@ -2,18 +2,25 @@ package pl.pwr.metronom;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
+import androidx.activity.result.ActivityResult;
+import androidx.activity.result.ActivityResultCallback;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
+import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.preference.PreferenceManager;
 import android.Manifest;
+import android.app.Activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.content.res.Configuration;
 import android.graphics.Color;
 import android.media.MediaPlayer;
 import android.os.Bundle;
@@ -24,9 +31,15 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.animation.AlphaAnimation;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
+import android.view.animation.LinearInterpolator;
 import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -40,6 +53,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -49,6 +63,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     boolean importFlag = false;
     boolean firstTap = true;
 
+    String fileName;
+    String baseDir;
+    String pathDir;
+    String line;
+
+    File csvFile;
+
+    FileInputStream fis;
+    InputStreamReader isr;
+    BufferedReader buff;
     int bpmAmount;
     int currentSongNo = 0;
     int tapCounter = 0;
@@ -58,6 +82,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     long averageTapsTime;
 
     String effectName;
+    String languageCode;
+
+    Intent settingsIntent;
+
+    LinearLayout myLinearLayout;
 
     MediaPlayer tickSound;;
     Timer tickTimer;
@@ -70,23 +99,28 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     EditText bpmEditTextInc;
 
-    Button incrementButton;
-    Button decrementButton;
-    Button pausePlayButton;
-    Button recordButton;
-    Button tapButton;
-    Button importButton;
-    Button previousSongButton;
-    Button nextSongButton;
+    ImageButton incrementButton;
+    ImageButton decrementButton;
+    ImageButton pausePlayButton;
+    ImageButton recordButton;
+    ImageButton tapButton;
+    ImageButton importButton;
+    ImageButton previousSongButton;
+    ImageButton nextSongButton;
 
     List<SongsList> importedSongs = new ArrayList<>();
 
     SharedPreferences SP;
 
+    ActivityResultLauncher<Intent> settingsActivityResultLauncher;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setAppTheme(); // dziala bez tej funkcji, nie musi jej raczej byc
+
+        setAppTheme();
+        setLanguage();
+
         setContentView(R.layout.activity_main);
 
         tempoMarking = (TextView) findViewById(R.id.tempoMarking);
@@ -95,69 +129,61 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         bpmEditTextInc = (EditText) findViewById(R.id.bpmInteger);
 
-        incrementButton = (Button) findViewById(R.id.incrementButton);
+        incrementButton = (ImageButton) findViewById(R.id.incrementButton);
         incrementButton.setOnClickListener(this);
 
-        decrementButton = (Button) findViewById(R.id.decrementButton);
+        decrementButton = (ImageButton) findViewById(R.id.decrementButton);
         decrementButton.setOnClickListener(this);
 
-        pausePlayButton = (Button) findViewById(R.id.pausePlayButton);
+        pausePlayButton = (ImageButton) findViewById(R.id.pausePlayButton);
         pausePlayButton.setOnClickListener(this);
 
-        recordButton = (Button) findViewById(R.id.recordButton);
+        recordButton = (ImageButton) findViewById(R.id.recordButton);
         recordButton.setOnClickListener(this);
 
-        tapButton = (Button) findViewById(R.id.tapButton);
+        tapButton = (ImageButton) findViewById(R.id.tapButton);
         tapButton.setOnClickListener(this);
 
-        importButton = (Button) findViewById(R.id.importButton);
+        importButton = (ImageButton) findViewById(R.id.importButton);
         importButton.setOnClickListener(this);
 
-        previousSongButton = (Button) findViewById(R.id.previousSongButton);
+        previousSongButton = (ImageButton) findViewById(R.id.previousSongButton);
         previousSongButton.setOnClickListener(this);
 
-        nextSongButton = (Button) findViewById(R.id.nextSongButton);
+        nextSongButton = (ImageButton) findViewById(R.id.nextSongButton);
         nextSongButton.setOnClickListener(this);
+
+        myLinearLayout = (LinearLayout) findViewById(R.id.linearLayout);
+        myLinearLayout.setOnClickListener(this);
+
+        nextSongButton.setEnabled(false); // na starcie apki zablokuj przyciski next i previous bo z poziomu activity_main.xml nie dziala a tutaj da sie to zrobic
+        previousSongButton.setEnabled(false); //
 
         bpmAmount = Integer.valueOf(bpmEditTextInc.getText().toString()).intValue(); // pierwsze i jednokrotne przypisanie wartosci do tej zmiennej zeby tempoMarking zadzialalo poprawnie
         setTempoMarking(); // jednokrotne wykonanie funkcji zeby ustawila sie nazwa tempa po wlaczeniu aplikacji (na samym starcie)
 
         ActionBar actionBar = getSupportActionBar();
-        actionBar.setTitle("Metronome @string");
+        actionBar.setTitle(R.string.actionBarTitle);
 
 
-//        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getBaseContext()); // uzyskaj plik w ktorym zapisane sa dane z ustawien
-//        boolean darkTheme = prefs.getBoolean("dark_theme_switch", false); // pobierz dane z ustawien
-//        String languageSelected = prefs.getString("language_list", "en_EN");
-//// zrobic deklaracje przed onCreate a tutaj inicjalizacje
-//        Toast.makeText(MainActivity.this, darkTheme + "", Toast.LENGTH_SHORT).show(); // dodac boolean isDarkTheme, usedLanguage, usedEffect
-//        prefs.edit().putBoolean("dark_theme_switch", true).apply(); // zmien ustawienia          na koncu mozna uzyc .commit()
-//        darkTheme = prefs.getBoolean("dark_theme_switch", false);
-//        Toast.makeText(MainActivity.this, darkTheme + "", Toast.LENGTH_SHORT).show();
+        settingsActivityResultLauncher =
+                registerForActivityResult(
+                        new ActivityResultContracts.StartActivityForResult(),
+                        new ActivityResultCallback<ActivityResult>() {
+                            @Override
+                            public void onActivityResult(ActivityResult result) {
+                                    Intent data = result.getData();
+                                    int resultCode = result.getResultCode();
+                                    if(resultCode == RESULT_OK) {
+                                        recreate();
+                                    }
+                                    else{
+                                        recreate();
+                                    }
+                            }
+                        });
 
-        SP = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
-        effectName = SP.getString("sound_effects_list", "soundone");
-        System.out.println("nazwa efektu"+effectName);
-
-        switch(effectName) {
-            case "soundone":
-                tickSound = MediaPlayer.create(this, R.raw.soundone);
-                break;
-            case "soundtwo":
-                tickSound = MediaPlayer.create(this, R.raw.soundtwo);
-                break;
-            case "soundthree":
-                tickSound = MediaPlayer.create(this, R.raw.soundthree);
-                break;
-            case "soundfour":
-                tickSound = MediaPlayer.create(this, R.raw.soundfour);
-                break;
-            case "soundfive":
-                tickSound = MediaPlayer.create(this, R.raw.soundfive);
-                break;
-            default:
-                tickSound = MediaPlayer.create(this, R.raw.soundone);
-        }
+        setTickEffect();
 
         tickTimer = new Timer("metronomeCounter", true);
 
@@ -200,6 +226,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         });
 
     }
+
+
+
 // koniec onCreate
 
 
@@ -217,21 +246,23 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             case R.id.action_settings:
                 stopTimer();
                 Toast.makeText(MainActivity.this, "settings selected test", Toast.LENGTH_SHORT).show();
-                startActivityForResult(new Intent(this, SettingsActivity.class), SETTINGS_ACTIVITY);
+                settingsIntent = new Intent(this, SettingsActivity.class);
+               // startActivityForResult(settingsIntent, SETTINGS_ACTIVITY); // tak sie robi po staremu
+                settingsActivityResultLauncher.launch(settingsIntent);
                 break;
 
         }
         return super.onOptionsItemSelected(item);
     }
 
-    @Override
-    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-
-        if(requestCode == SETTINGS_ACTIVITY){
-            this.recreate();
-        }
-    }
+//    @Override
+//    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+//        super.onActivityResult(requestCode, resultCode, data);
+//
+//        if(requestCode == SETTINGS_ACTIVITY){
+//            this.recreate();
+//        }
+//    }
 
     public void setAppTheme(){
         SP = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
@@ -244,6 +275,46 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
             System.out.println("wlaczylem tryb dzienny");
         }
+    }
+
+    private void setTickEffect() {
+        SP = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
+        effectName = SP.getString("sound_effects_list", "soundone");
+        System.out.println("nazwa efektu"+effectName);
+
+        switch(effectName) {
+            case "soundone":
+                tickSound = MediaPlayer.create(this, R.raw.soundone);
+                break;
+            case "soundtwo":
+                tickSound = MediaPlayer.create(this, R.raw.soundtwo);
+                break;
+            case "soundthree":
+                tickSound = MediaPlayer.create(this, R.raw.soundthree);
+                break;
+            case "soundfour":
+                tickSound = MediaPlayer.create(this, R.raw.soundfour);
+                break;
+            case "soundfive":
+                tickSound = MediaPlayer.create(this, R.raw.soundfive);
+                break;
+            default:
+                tickSound = MediaPlayer.create(this, R.raw.soundone);
+        }
+    }
+
+    private void setLanguage() {
+
+        SP = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
+        languageCode = SP.getString("language_list", "en");
+
+        String languageToLoad  = languageCode; // tutaj podaje skrot jezyka (2 litery)
+        Locale locale = new Locale(languageToLoad);
+        Locale.setDefault(locale);
+        Configuration config = new Configuration();
+        config.locale = locale;
+        getBaseContext().getResources().updateConfiguration(config, getBaseContext().getResources().getDisplayMetrics());
+        this.setContentView(R.layout.activity_main); // przez to nie wczytuje dzwieku
     }
 
     private boolean isExternalStorageReadable() {
@@ -260,27 +331,25 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
 
     public boolean importAndDataRead() {
-
-            StringBuilder sb = new StringBuilder();
-            String line = "";
+            line = "";
 
             try{
 
-                String fileName = "songsdata.csv";
-                String baseDir = Environment.getExternalStorageDirectory().getAbsolutePath();
-                String pathDir = baseDir + "/Download/";
+                fileName = "database.csv";
+                baseDir = Environment.getExternalStorageDirectory().getAbsolutePath();
+                pathDir = baseDir + "/Download/";
 
-                File csvFile = new File(pathDir + File.separator + fileName);
+                csvFile = new File(pathDir + File.separator + fileName);
 
-                FileInputStream fis = new FileInputStream(csvFile);
-                InputStreamReader isr = new InputStreamReader(fis);
-                BufferedReader buff = new BufferedReader(isr);
+                fis = new FileInputStream(csvFile);
+                isr = new InputStreamReader(fis);
+                buff = new BufferedReader(isr);
                 buff.readLine();
                 //String line = null; // gdyby String line wyzej nie zadzialal
 
                     while((line = buff.readLine()) != null){
                         Log.d("MyActivity", "Line: " + line);
-                        String[] tokens = line.split(","); // Oddziel znakiem ,
+                        String[] tokens = line.split(";"); // Oddziel znakiem ;
 
                         //odczytaj dane
                         SongsList sample = new SongsList();
@@ -311,6 +380,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public void stopTimer(){
         tickTimer.cancel();
         isPlaying=false;
+        pausePlayButton.setImageResource(R.drawable.ic_play);
     }
 
     public void startTimer(){
@@ -323,6 +393,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         };
         tickTimer.scheduleAtFixedRate(tickTone, 1000, 60000/Integer.valueOf(bpmEditTextInc.getText().toString()));
         isPlaying=true; //IllegalArgumentException:	if delay < 0, or delay + System.currentTimeMillis() < 0, or period <= 0 (period musi trwac przynajmniej 1 ms)
+        pausePlayButton.setImageResource(R.drawable.ic_pause);
     }
 
     public void setNewBpmAndName(){
@@ -429,9 +500,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 bpmAmount = Integer.valueOf(bpmEditTextInc.getText().toString()).intValue();
                 bpmEditTextInc.setText(String.valueOf(bpmAmount+1));
                 Toast.makeText(MainActivity.this, String.valueOf(bpmAmount+1), Toast.LENGTH_SHORT).show();
-                stopTimer();
                 if(isPlaying) {
+                    stopTimer(); // jesli metronom gra to go wylacz, zwieksz bpm i wlacz
                     startTimer();
+                }
+                else{
+                    stopTimer(); // jezeli nie gra to zatrzymaj i zwieksz bpm ale nie wlaczaj
                 }
                 System.out.println(bpmAmount);
                 setTempoMarking();
@@ -442,14 +516,20 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 bpmAmount = Integer.valueOf(bpmEditTextInc.getText().toString()).intValue();
                 bpmEditTextInc.setText(String.valueOf(bpmAmount-1));
                 Toast.makeText(MainActivity.this, String.valueOf(bpmAmount-1), Toast.LENGTH_SHORT).show();
-                stopTimer();
                 if(isPlaying) {
+                    stopTimer();
                     startTimer();
+                }
+                else{
+                    stopTimer();
                 }
                 setTempoMarking();
                 break;
 
             case R.id.pausePlayButton:
+                Animation blinkAnimation = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.blink);
+                tempoMarking.startAnimation(blinkAnimation);
+
                 if(isPlaying){
                     this.stopTimer();
                 }
@@ -464,12 +544,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 Toast.makeText(MainActivity.this, "tapButton onClick test", Toast.LENGTH_SHORT).show();
 
                 if(firstTap){ // pierwsze inicjujace klikniecie
+                    stopTimer();
                     System.out.println("first tap triggered");
                     tapStopwatch = Stopwatch.createUnstarted();
                     tapStopwatch.start();
                     firstTap = false;
+
                 }
                 else{
+                    stopTimer();
                     tapCounter++;
                     System.out.println("tapCounter++ " + tapCounter);
                     tapStopwatch.stop();
@@ -477,8 +560,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     summedTapsTime =+ tapStopwatch.elapsed(MILLISECONDS);
                     averageTapsTime = summedTapsTime/tapCounter;
                     bpmEditTextInc.setText(String.valueOf((60000/averageTapsTime))); //wylicz srednia w ms
-
                     tapStopwatch.start();
+                    startTimer();
                 }
 
                 break;
@@ -504,7 +587,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                 previousSongButton.setEnabled(true);
                                 nextSongButton.setEnabled(true);
                                 songName.setEnabled(true);
-                                songName.setTextColor(Color.BLACK);
                                 importFlag = true;
                                 setNewBpmAndName();
                                 setTempoMarking();
@@ -512,7 +594,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                 previousSongButton.setEnabled(false);
                                 nextSongButton.setEnabled(false);
                                 songName.setEnabled(false);
-                                songName.setTextColor(Color.rgb(136, 136, 136));
                                 importFlag = false;
                                 this.stopTimer();
                             }
