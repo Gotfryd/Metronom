@@ -20,11 +20,15 @@ import android.app.Activity;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.content.res.ColorStateList;
 import android.content.res.Configuration;
 import android.graphics.Color;
+import android.graphics.drawable.AnimationDrawable;
+import android.media.Image;
 import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.Menu;
@@ -39,9 +43,12 @@ import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+
 
 import com.google.common.base.Stopwatch;
 
@@ -60,8 +67,10 @@ import java.util.TimerTask;
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
     boolean isPlaying = false;
-    boolean importFlag = false;
+    boolean isImportActive = false;
+    boolean isRecordingActive = false;
     boolean firstTap = true;
+    boolean isAnimationEnabled = true;
 
     String fileName;
     String baseDir;
@@ -73,20 +82,28 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     FileInputStream fis;
     InputStreamReader isr;
     BufferedReader buff;
+
     int bpmAmount;
     int currentSongNo = 0;
     int tapCounter = 0;
     private int STORAGE_PERMISSION_CODE = 1;
     final int SETTINGS_ACTIVITY = 1;
+    int holdDelay = 80;
     long summedTapsTime;
     long averageTapsTime;
+    short currentTact;
 
     String effectName;
     String languageCode;
 
     Intent settingsIntent;
 
-    LinearLayout myLinearLayout;
+    ConstraintLayout myConstraintLayout;
+
+    Animation blinkAnimation;
+
+    Handler handler = new Handler();
+    Runnable runnable;
 
     MediaPlayer tickSound;;
     Timer tickTimer;
@@ -107,6 +124,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     ImageButton importButton;
     ImageButton previousSongButton;
     ImageButton nextSongButton;
+
+    ImageView[] beatDots = new ImageView[4];
 
     List<SongsList> importedSongs = new ArrayList<>();
 
@@ -153,11 +172,21 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         nextSongButton = (ImageButton) findViewById(R.id.nextSongButton);
         nextSongButton.setOnClickListener(this);
 
-        myLinearLayout = (LinearLayout) findViewById(R.id.linearLayout);
-        myLinearLayout.setOnClickListener(this);
+//        tactOne = (ImageView) findViewById(R.id.tactOne);
+//        tactTwo = (ImageView) findViewById(R.id.tactTwo);
+//        tactThree = (ImageView) findViewById(R.id.tactThree);
+//        tactFour = (ImageView) findViewById(R.id.tactFour);
+
+        myConstraintLayout = (ConstraintLayout) findViewById(R.id.myConstraintLayout);
+        myConstraintLayout.setOnClickListener(this);
 
         nextSongButton.setEnabled(false); // na starcie apki zablokuj przyciski next i previous bo z poziomu activity_main.xml nie dziala a tutaj da sie to zrobic
         previousSongButton.setEnabled(false); //
+
+        beatDots[0] = (ImageView) findViewById(R.id.tactOne);
+        beatDots[1] = (ImageView) findViewById(R.id.tactTwo);
+        beatDots[2] = (ImageView) findViewById(R.id.tactThree);
+        beatDots[3] = (ImageView) findViewById(R.id.tactFour);
 
         bpmAmount = Integer.valueOf(bpmEditTextInc.getText().toString()).intValue(); // pierwsze i jednokrotne przypisanie wartosci do tej zmiennej zeby tempoMarking zadzialalo poprawnie
         setTempoMarking(); // jednokrotne wykonanie funkcji zeby ustawila sie nazwa tempa po wlaczeniu aplikacji (na samym starcie)
@@ -184,6 +213,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         });
 
         setTickEffect();
+        setAnimationState();
 
         tickTimer = new Timer("metronomeCounter", true);
 
@@ -197,14 +227,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         bpmEditTextInc.setOnEditorActionListener(new TextView.OnEditorActionListener() { // akcja wykonujaca sie po kliknieciu przycisku "Enter" z klawiatury
             @Override
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                bpmAmount = Integer.valueOf(bpmEditTextInc.getText().toString()).intValue();
+                setTempoMarking();
                 if(actionId == EditorInfo.IME_ACTION_DONE){
                     stopTimer();
                     if(!isPlaying) {
                         startTimer();
                     }
                 }
-                bpmAmount = Integer.valueOf(bpmEditTextInc.getText().toString()).intValue();
-                setTempoMarking();
+
                 return false;
             }
         });
@@ -212,20 +243,68 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         tapButton.setOnLongClickListener(new View.OnLongClickListener() {
             @Override
             public boolean onLongClick(View view) { // resetruje dane uzyskane przez przytrzymanie przycisku "Tap"
-                Toast.makeText(MainActivity.this, "long click test", Toast.LENGTH_SHORT).show();
-
                 summedTapsTime = 0;
                 averageTapsTime = 0;
                 tapCounter = 0;
                 firstTap = true;
                 bpmEditTextInc.setText(String.valueOf((90)));
                 stopTimer();
+                return true;
+            }
+        });
 
+        incrementButton.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View view) {
+                runnable = new Runnable() {
+                    @Override
+                    public void run() {
+                        if (!incrementButton.isPressed()) return;
+                        bpmAmount = Integer.valueOf(bpmEditTextInc.getText().toString()).intValue();
+                        bpmEditTextInc.setText(String.valueOf(bpmAmount+1));
+                        if(isPlaying) {
+                            stopTimer(); // jesli metronom gra to go wylacz, zwieksz bpm i wlacz
+                            startTimer();
+                        }
+                        else{
+                            stopTimer(); // jezeli nie gra to zatrzymaj i zwieksz bpm ale nie wlaczaj
+                        }
+                        setTempoMarking();
+                        handler.postDelayed(runnable, holdDelay);
+                    }
+                };
+                handler.postDelayed(runnable, holdDelay);
+                return true;
+            }
+        });
+
+        decrementButton.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View view) {
+                runnable = new Runnable() {
+                    @Override
+                    public void run() {
+                        if (!decrementButton.isPressed()) return;
+                        bpmAmount = Integer.valueOf(bpmEditTextInc.getText().toString()).intValue();
+                        bpmEditTextInc.setText(String.valueOf(bpmAmount-1));
+                        if(isPlaying) {
+                            stopTimer(); // jesli metronom gra to go wylacz, zwieksz bpm i wlacz
+                            startTimer();
+                        }
+                        else{
+                            stopTimer(); // jezeli nie gra to zatrzymaj i zwieksz bpm ale nie wlaczaj
+                        }
+                        setTempoMarking();
+                        handler.postDelayed(runnable, holdDelay);
+                    }
+                };
+                handler.postDelayed(runnable, holdDelay);
                 return true;
             }
         });
 
     }
+
 
 
 
@@ -245,7 +324,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         {
             case R.id.action_settings:
                 stopTimer();
-                Toast.makeText(MainActivity.this, "settings selected test", Toast.LENGTH_SHORT).show();
                 settingsIntent = new Intent(this, SettingsActivity.class);
                // startActivityForResult(settingsIntent, SETTINGS_ACTIVITY); // tak sie robi po staremu
                 settingsActivityResultLauncher.launch(settingsIntent);
@@ -269,18 +347,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         if(SP.getBoolean("night_mode_switch", false)){
             AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
-            System.out.println("wlaczylem tryb nocny");
         }
         else{
             AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
-            System.out.println("wlaczylem tryb dzienny");
         }
     }
 
     private void setTickEffect() {
         SP = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
         effectName = SP.getString("sound_effects_list", "soundone");
-        System.out.println("nazwa efektu"+effectName);
 
         switch(effectName) {
             case "soundone":
@@ -300,6 +375,17 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 break;
             default:
                 tickSound = MediaPlayer.create(this, R.raw.soundone);
+        }
+    }
+
+    private void setAnimationState() {
+        SP = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
+
+        if(SP.getBoolean("blink_animation_switch", true)){
+            isAnimationEnabled = true;
+        }
+        else{
+            isAnimationEnabled = false;
         }
     }
 
@@ -336,10 +422,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             try{
 
                 fileName = "database.csv";
-                baseDir = Environment.getExternalStorageDirectory().getAbsolutePath();
-                pathDir = baseDir + "/Download/";
-
-                csvFile = new File(pathDir + File.separator + fileName);
+              //  baseDir = Environment.getExternalStorageDirectory().getAbsolutePath();
+              //  pathDir = baseDir + "/Download/";
+                pathDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).toString();
+                csvFile = new File(pathDir, fileName);
 
                 fis = new FileInputStream(csvFile);
                 isr = new InputStreamReader(fis);
@@ -381,22 +467,83 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         tickTimer.cancel();
         isPlaying=false;
         pausePlayButton.setImageResource(R.drawable.ic_play);
+
+        currentTact = 0;
+        for(int i=0;i<beatDots.length; i++) {
+            beatDots[i].clearColorFilter();
+        }
     }
 
     public void startTimer(){
+        checkBpmLimit();
+        currentTact = 0;
+
+        if(isAnimationEnabled) {
+            blinkAnimation = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.blink);
+            blinkAnimation.setDuration(60000 / Integer.valueOf(bpmEditTextInc.getText().toString()));
+        }
+
         tickTimer = new Timer("metronomeCounter", true);
+
         tickTone = new TimerTask(){
             @Override
             public void run(){
-                tickSound.start();
+                    tactController();
+                    tickSound.start();
+                    if (isAnimationEnabled) {
+                        myConstraintLayout.startAnimation(blinkAnimation);
+                    }
             }
         };
+
         tickTimer.scheduleAtFixedRate(tickTone, 1000, 60000/Integer.valueOf(bpmEditTextInc.getText().toString()));
         isPlaying=true; //IllegalArgumentException:	if delay < 0, or delay + System.currentTimeMillis() < 0, or period <= 0 (period musi trwac przynajmniej 1 ms)
         pausePlayButton.setImageResource(R.drawable.ic_pause);
     }
 
-    public void setNewBpmAndName(){
+    private void tactController() {
+
+        switch(currentTact){
+            case 0:
+//                beatDots[currentTact].setColorFilter(Color.argb(255, 0, 255, 0));
+//                beatDots[beatDots.length-1].clearColorFilter();
+                setTactDotsColors(currentTact, beatDots.length-1);
+                currentTact++;
+                break;
+            case 1:
+            case 2:
+//                beatDots[currentTact].setColorFilter(Color.argb(255, 0, 255, 0));
+//                beatDots[currentTact-1].clearColorFilter();
+                setTactDotsColors(currentTact, currentTact-1);
+                currentTact++;
+                break;
+            case 3:
+//                beatDots[currentTact].setColorFilter(Color.argb(255, 0, 255, 0));
+//                beatDots[currentTact-1].clearColorFilter();
+                setTactDotsColors(currentTact, currentTact-1);
+                currentTact = 0;
+                break;
+            default:
+                System.out.println("Tact error");
+                break;
+        }
+    }
+
+    private void setTactDotsColors(int dotToColor , int dotToClear){
+        beatDots[dotToColor].setColorFilter(Color.argb(255, 0, 255, 0));
+        beatDots[dotToClear].clearColorFilter();
+    }
+
+
+
+    public void checkBpmLimit() {
+        if(bpmAmount < 1){
+            System.out.println("BPM cannot be below 1"); // DO DOKONCZENIA
+            //stop funkcje
+        }
+    }
+
+    public void setNewBpmAndNameFromBase(){
         bpmEditTextInc.setText(String.valueOf(importedSongs.get(currentSongNo).getTrackBpm())); // ustaw BPM
         songName.setText(String.valueOf(importedSongs.get(currentSongNo).getComposer()+" - "+importedSongs.get(currentSongNo).getTitle())); // ustaw wykonawce i nazwe utworu
     }
@@ -481,9 +628,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == STORAGE_PERMISSION_CODE) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                Toast.makeText(this, "Storage permission granted. Please press the import button again", Toast.LENGTH_SHORT).show();
+                Toast.makeText(MainActivity.this, this.getString(R.string.storagePermGranted), Toast.LENGTH_SHORT).show();
             } else {
-                Toast.makeText(MainActivity.this, "You must grant storage permission to import data", Toast.LENGTH_SHORT).show();
+                Toast.makeText(MainActivity.this, this.getString(R.string.permissionInfo), Toast.LENGTH_SHORT).show();
             }
         }
     }
@@ -499,7 +646,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                 bpmAmount = Integer.valueOf(bpmEditTextInc.getText().toString()).intValue();
                 bpmEditTextInc.setText(String.valueOf(bpmAmount+1));
-                Toast.makeText(MainActivity.this, String.valueOf(bpmAmount+1), Toast.LENGTH_SHORT).show();
                 if(isPlaying) {
                     stopTimer(); // jesli metronom gra to go wylacz, zwieksz bpm i wlacz
                     startTimer();
@@ -507,7 +653,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 else{
                     stopTimer(); // jezeli nie gra to zatrzymaj i zwieksz bpm ale nie wlaczaj
                 }
-                System.out.println(bpmAmount);
                 setTempoMarking();
                 break;
 
@@ -515,7 +660,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                 bpmAmount = Integer.valueOf(bpmEditTextInc.getText().toString()).intValue();
                 bpmEditTextInc.setText(String.valueOf(bpmAmount-1));
-                Toast.makeText(MainActivity.this, String.valueOf(bpmAmount-1), Toast.LENGTH_SHORT).show();
                 if(isPlaying) {
                     stopTimer();
                     startTimer();
@@ -527,25 +671,20 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 break;
 
             case R.id.pausePlayButton:
-                Animation blinkAnimation = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.blink);
-                tempoMarking.startAnimation(blinkAnimation);
-
                 if(isPlaying){
                     this.stopTimer();
                 }
                 else{
                     this.startTimer();
                 }
-                Toast.makeText(MainActivity.this, "pausePlayButton onClick test", Toast.LENGTH_SHORT).show();
                 break;
 
             case R.id.tapButton:
                 // ustawic bpm na podstawie tylko 2 klikniec - czas miedzy pierwszym a drugim klinieciem to bpm, po drugim kliknieciu resetuje sie funkcja i przycisk jest gotowy na ponowne wystukanie tempa
-                Toast.makeText(MainActivity.this, "tapButton onClick test", Toast.LENGTH_SHORT).show();
 
                 if(firstTap){ // pierwsze inicjujace klikniecie
+                    Toast.makeText(MainActivity.this, this.getString(R.string.holdToReset), Toast.LENGTH_SHORT).show();
                     stopTimer();
-                    System.out.println("first tap triggered");
                     tapStopwatch = Stopwatch.createUnstarted();
                     tapStopwatch.start();
                     firstTap = false;
@@ -561,50 +700,57 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     averageTapsTime = summedTapsTime/tapCounter;
                     bpmEditTextInc.setText(String.valueOf((60000/averageTapsTime))); //wylicz srednia w ms
                     tapStopwatch.start();
-                    startTimer();
                 }
 
                 break;
 
             case R.id.recordButton:
+                System.out.println("Sciezka do tego: " + getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS));
+                System.out.println("Sciezka do tego: " +Environment.getExternalStorageDirectory().getAbsolutePath());
+                if(!isRecordingActive){
+                    recordButton.setColorFilter(Color.argb(255, 0, 255, 0));
+                    isRecordingActive = true;
+                }
+                else{
+                    recordButton.clearColorFilter();
+                    isRecordingActive = false;
+                }
 
-                Toast.makeText(MainActivity.this, "recordButton onClick test", Toast.LENGTH_SHORT).show();
                 break;
 
             case R.id.importButton: //pierwsze klikniecie importuje baze i wlacza 3 przyciski do sterowania, kolejne klikniecie zwija przyciski
 
-                Toast.makeText(MainActivity.this, "importButton onClick test", Toast.LENGTH_SHORT).show();
                 if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
 
                     if (isExternalStorageReadable()) {
 
                         if (importAndDataRead()) {
 
-                            if (!importFlag) {
-                                Toast.makeText(MainActivity.this, "Database imported successfully! Tap again to hide imported songs", Toast.LENGTH_SHORT).show();
+                            if (!isImportActive) {
+                                Toast.makeText(MainActivity.this, this.getString(R.string.baseImpSuccess), Toast.LENGTH_SHORT).show();
                                 this.stopTimer();
                                 importAndDataRead();  // funkcja wczytujaca piosenki z tempem z pliku csv
                                 previousSongButton.setEnabled(true);
                                 nextSongButton.setEnabled(true);
                                 songName.setEnabled(true);
-                                importFlag = true;
-                                setNewBpmAndName();
+                                isImportActive = true;
+                                setNewBpmAndNameFromBase();
                                 setTempoMarking();
                             } else {
                                 previousSongButton.setEnabled(false);
                                 nextSongButton.setEnabled(false);
                                 songName.setEnabled(false);
-                                importFlag = false;
+                                isImportActive = false;
                                 this.stopTimer();
                             }
                         }
                         else {
-                            Toast.makeText(MainActivity.this, "Cannot import data. File doesn't exist or it's wrong named or it's wrong formatted", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(MainActivity.this, this.getString(R.string.cantImpData), Toast.LENGTH_SHORT).show();
                         }
 
                     }
                     else{
-                        Toast.makeText(MainActivity.this, "Cannot read from external storage", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(MainActivity.this, this.getString(R.string.cantReadStorage), Toast.LENGTH_SHORT).show();
                     }
                 }
                 else {
@@ -615,7 +761,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 break;
 
             case R.id.previousSongButton:
-                Toast.makeText(MainActivity.this, "previousSongButton onClick test", Toast.LENGTH_SHORT).show();
 
                 this.stopTimer();
 
@@ -626,7 +771,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     currentSongNo--;
                 }
 
-                setNewBpmAndName();
+                setNewBpmAndNameFromBase();
 
                 bpmAmount = Integer.valueOf(bpmEditTextInc.getText().toString()).intValue();
                 setTempoMarking();
@@ -634,7 +779,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 break;
 
             case R.id.nextSongButton:
-                Toast.makeText(MainActivity.this, "nextSongButton onClick test", Toast.LENGTH_SHORT).show();
 
                 this.stopTimer();
 
@@ -645,7 +789,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     currentSongNo++;
                 }
 
-                setNewBpmAndName();
+                setNewBpmAndNameFromBase();
 
                 bpmAmount = Integer.valueOf(bpmEditTextInc.getText().toString()).intValue();
                 setTempoMarking();

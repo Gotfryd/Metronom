@@ -1,146 +1,182 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    tools:context=".MainActivity"
-    android:id="@+id/linearLayout"
-    android:background="@drawable/layout_border">
 
-<androidx.constraintlayout.widget.ConstraintLayout
-    android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:id="@+id/constraintLayout"
-    tools:context=".MainActivity">
+    <androidx.constraintlayout.widget.ConstraintLayout
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        xmlns:tools="http://schemas.android.com/tools"
+        android:id="@+id/myConstraintLayout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        tools:context=".MainActivity">
 
-    <EditText
-        android:id="@+id/bpmInteger"
-        android:inputType="number"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="90"
-        android:textSize="48sp"
-        android:textStyle="bold"
+        <EditText
+            android:id="@+id/bpmInteger"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:imeOptions="actionDone"
+            android:inputType="number"
+            android:text="90"
+            android:textSize="48sp"
+            android:textStyle="bold"
+            app:layout_constraintBottom_toTopOf="@+id/pausePlayButton"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <TextView
+            android:id="@+id/tempoMarking"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="16sp"
+            app:layout_constraintBottom_toTopOf="@+id/bpmInteger"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintVertical_bias="1" />
+
+    <ImageView
+        android:id="@+id/tactOne"
+        android:layout_width="20dp"
+        android:layout_height="20dp"
+        android:src="@drawable/active_dot"
         app:layout_constraintBottom_toTopOf="@+id/pausePlayButton"
+        app:layout_constraintHorizontal_bias="0.03"
         app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        android:imeOptions="actionDone" />
+        app:layout_constraintRight_toLeftOf="@id/tactTwo"
+        app:layout_constraintTop_toBottomOf="@id/bpmInteger" />
 
-    <TextView
-        android:id="@+id/tempoMarking"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:textSize="16sp"
-        app:layout_constraintBottom_toTopOf="@+id/bpmInteger"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="1"/>
-
-    <ImageButton
-        android:id="@+id/pausePlayButton"
-        android:layout_width="100dp"
-        android:layout_height="100dp"
-        android:src="@drawable/ic_play"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.45" />
-
-    <ImageButton
-        android:id="@+id/decrementButton"
-        android:layout_width="60dp"
-        android:layout_height="60dp"
-        android:src="@drawable/ic_remove"
+    <ImageView
+        android:id="@+id/tactTwo"
+        android:layout_width="20dp"
+        android:layout_height="20dp"
+        android:src="@drawable/active_dot"
         app:layout_constraintBottom_toTopOf="@+id/pausePlayButton"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toLeftOf="@id/bpmInteger"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintLeft_toRightOf="@id/tactOne"
+        app:layout_constraintRight_toLeftOf="@id/tactThree"
+        app:layout_constraintTop_toBottomOf="@id/bpmInteger" />
 
-    <ImageButton
-        android:id="@+id/incrementButton"
-        android:layout_width="60dp"
-        android:layout_height="60dp"
-        android:src="@drawable/ic_add"
-
+    <ImageView
+        android:id="@+id/tactThree"
+        android:layout_width="20dp"
+        android:layout_height="20dp"
+        android:src="@drawable/active_dot"
         app:layout_constraintBottom_toTopOf="@+id/pausePlayButton"
-        app:layout_constraintLeft_toRightOf="@id/bpmInteger"
+        app:layout_constraintLeft_toRightOf="@id/tactTwo"
+        app:layout_constraintRight_toLeftOf="@id/tactFour"
+        app:layout_constraintTop_toBottomOf="@id/bpmInteger"
+        />
+
+    <ImageView
+        android:id="@+id/tactFour"
+        android:layout_width="20dp"
+        android:layout_height="20dp"
+        android:src="@drawable/active_dot"
+        app:layout_constraintBottom_toTopOf="@+id/pausePlayButton"
+        app:layout_constraintLeft_toRightOf="@id/tactThree"
         app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toBottomOf="@id/bpmInteger" />
 
-    <TextView
-        android:id="@+id/songName"
-        android:layout_width="260dp"
-        android:layout_height="50dp"
-        android:gravity="center"
-        android:text="@string/composerTitle"
-        android:enabled="false"
-        android:textSize="16sp"
-        app:layout_constraintBottom_toTopOf="@+id/tapButton"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/pausePlayButton"
-        app:layout_constraintVertical_bias="0.65" />
+        <ImageButton
+            android:id="@+id/pausePlayButton"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:src="@drawable/ic_play"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintVertical_bias="0.45" />
 
-    <ImageButton
-        android:id="@+id/previousSongButton"
-        android:layout_width="50dp"
-        android:layout_height="50dp"
-        android:src="@drawable/ic_arrow_left"
-        app:layout_constraintBottom_toTopOf="@+id/tapButton"
-        app:layout_constraintRight_toLeftOf="@+id/songName"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/pausePlayButton"
-        app:layout_constraintVertical_bias="0.65" />
+        <ImageButton
+            android:id="@+id/decrementButton"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:src="@drawable/ic_remove"
+            app:layout_constraintBottom_toTopOf="@+id/pausePlayButton"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toLeftOf="@id/bpmInteger"
+            app:layout_constraintTop_toTopOf="parent" />
 
-    <ImageButton
-        android:id="@+id/nextSongButton"
-        android:layout_width="50dp"
-        android:layout_height="50dp"
-        android:src="@drawable/ic_arrow_right"
-        app:layout_constraintBottom_toTopOf="@+id/tapButton"
-        app:layout_constraintLeft_toRightOf="@+id/songName"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/pausePlayButton"
-        app:layout_constraintVertical_bias="0.65" />
+        <ImageButton
+            android:id="@+id/incrementButton"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:src="@drawable/ic_add"
 
-    <ImageButton
-        android:id="@+id/tapButton"
-        android:layout_width="160dp"
-        android:layout_height="160dp"
-        android:src="@drawable/ic_touch"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/pausePlayButton"
-        app:layout_constraintVertical_bias="0.8" />
+            app:layout_constraintBottom_toTopOf="@+id/pausePlayButton"
+            app:layout_constraintLeft_toRightOf="@id/bpmInteger"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
 
-    <ImageButton
-        android:id="@+id/recordButton"
-        android:layout_width="100dp"
-        android:layout_height="160dp"
-        android:src="@drawable/ic_mic"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintHorizontal_bias="0.461"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toLeftOf="@id/tapButton"
-        app:layout_constraintTop_toBottomOf="@id/pausePlayButton"
-        app:layout_constraintVertical_bias="0.8" />
+        <TextView
+            android:id="@+id/songName"
+            android:layout_width="260dp"
+            android:layout_height="50dp"
+            android:enabled="false"
+            android:gravity="center"
+            android:text="@string/performerTitle"
+            android:textSize="16sp"
+            app:layout_constraintBottom_toTopOf="@+id/tapButton"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/pausePlayButton"
+            app:layout_constraintVertical_bias="0.65" />
 
-    <ImageButton
-        android:id="@+id/importButton"
-        android:layout_width="100dp"
-        android:layout_height="160dp"
-        android:src="@drawable/ic_import"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintLeft_toRightOf="@id/tapButton"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/pausePlayButton"
-        app:layout_constraintVertical_bias="0.8" />
+        <ImageButton
+            android:id="@+id/previousSongButton"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:src="@drawable/ic_arrow_left"
+            app:layout_constraintBottom_toTopOf="@+id/tapButton"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toLeftOf="@+id/songName"
+            app:layout_constraintTop_toBottomOf="@id/pausePlayButton"
+            app:layout_constraintVertical_bias="0.65" />
+
+        <ImageButton
+            android:id="@+id/nextSongButton"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:src="@drawable/ic_arrow_right"
+            app:layout_constraintBottom_toTopOf="@+id/tapButton"
+            app:layout_constraintLeft_toRightOf="@+id/songName"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/pausePlayButton"
+            app:layout_constraintVertical_bias="0.65" />
+
+        <ImageButton
+            android:id="@+id/tapButton"
+            android:layout_width="160dp"
+            android:layout_height="160dp"
+            android:src="@drawable/ic_touch"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/pausePlayButton"
+            app:layout_constraintVertical_bias="0.8" />
+
+        <ImageButton
+            android:id="@+id/recordButton"
+            android:layout_width="100dp"
+            android:layout_height="160dp"
+            android:src="@drawable/ic_mic"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintHorizontal_bias="0.461"
+            app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toLeftOf="@id/tapButton"
+            app:layout_constraintTop_toBottomOf="@id/pausePlayButton"
+            app:layout_constraintVertical_bias="0.8" />
+
+        <ImageButton
+            android:id="@+id/importButton"
+            android:layout_width="100dp"
+            android:layout_height="160dp"
+            android:src="@drawable/ic_import"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintLeft_toRightOf="@id/tapButton"
+            app:layout_constraintRight_toRightOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/pausePlayButton"
+            app:layout_constraintVertical_bias="0.8" />
 
 
-</androidx.constraintlayout.widget.ConstraintLayout>
-</LinearLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>

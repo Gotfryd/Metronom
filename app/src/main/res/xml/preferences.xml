@@ -9,7 +9,17 @@
             android:title="@string/darkTheme"
             android:summary="@string/darkThemeSummary" />
 
+        <SwitchPreference
+            android:defaultValue="true"
+            android:key="blink_animation_switch"
+            android:title="@string/flashAnimation"
+            android:summary="@string/flashAnimationSummary" />
+
     </PreferenceCategory>
+
+
+
+
 
     <PreferenceCategory android:title="@string/preferenceCategoryTwo">
 

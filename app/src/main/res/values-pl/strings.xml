@@ -4,16 +4,18 @@
     <string name="title_activity_settings">SettingsActivity</string>
     <string name="settings_icon">Settings</string>
     <string name="actionBarTitle">Metronom</string>
-    <string name="preferenceCategoryOne">Category</string>
-    <string name="preferenceCategoryTwo">Dzwieks</string>
-    <string name="preferenceCategoryThree">Language</string>
-    <string name="darkTheme">Dark Theme</string>
-    <string name="darkThemeSummary">Zmień kolory interfejsu na ciemne ŹĄśŻó</string>
-    <string name="soundEffect">Change metronome sound effect</string>
-    <string name="soundEffectSummary">Choose one of the metronome sound effects from the list</string>
-    <string name="changeLanguage">Change language</string>
-    <string name="changeLanguageSummary">Select language to change</string>
-
+    <string name="preferenceCategoryOne">Wyświetlacz</string>
+    <string name="preferenceCategoryTwo">Dźwięk</string>
+    <string name="preferenceCategoryThree">Język</string>
+    <string name="darkTheme">Ciemny motyw</string>
+    <string name="darkThemeSummary">Zmień kolory interfejsu na ciemne</string>
+    <string name="soundEffect">Zmień efekt dźwięku metronomu</string>
+    <string name="soundEffectSummary">Wybierz z listy jeden z dźwięków metronomu</string>
+    <string name="changeLanguage">Zmień język</string>
+    <string name="changeLanguageSummary">Wybierz język do zmiany</string>
+    <string name="flashAnimation">Miganie ekranu przy tykaniu</string>
+    <string name="flashAnimationSummary">Przełącz efekt migania ekranu, gdy metronom wykona jedno tyknięcie</string>
+    <string name="performerTitle">Wykonawca - Tytuł</string>
 
     <string name="soundOne">Dźwięk 1</string>
     <string name="soundTwo">Dźwięk 2</string>
@@ -23,6 +25,12 @@
     <string name="english">English</string>
     <string name="polish">Polski</string>
     <string name="german">Deutsch</string>
-    <string name="composerTitle">Composer - Title</string>
+    <string name="storagePermGranted">Storage permission granted. Please press the import button again</string>
+    <string name="baseImpSuccess">Database imported successfully! Tap again to hide imported songs</string>
+    <string name="cantImpData">Cannot import data. File doesn\'t exist or it\'s wrong named or it\'s wrong formatted</string>
+    <string name="cantReadStorage">Cannot read from external storage</string>
+    <string name="permissionInfo">You must grant storage permission to import data</string>
+    <string name="holdToReset">Hold tap button to reset counter</string>
+
 
 </resources>

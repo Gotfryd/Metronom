@@ -4,8 +4,8 @@
     <string name="title_activity_settings">SettingsActivity</string>
     <string name="settings_icon">Settings</string>
     <string name="actionBarTitle">Metronome</string>
-    <string name="preferenceCategoryOne">Category</string>
-    <string name="preferenceCategoryTwo">Dzwieks</string>
+    <string name="preferenceCategoryOne">Display</string>
+    <string name="preferenceCategoryTwo">Sound</string>
     <string name="preferenceCategoryThree">Language</string>
     <string name="darkTheme">Dark Theme</string>
     <string name="darkThemeSummary">Change interface colors to dark</string>
@@ -13,7 +13,9 @@
     <string name="soundEffectSummary">Choose one of the metronome sound effects from the list</string>
     <string name="changeLanguage">Change language</string>
     <string name="changeLanguageSummary">Select language to change</string>
-
+    <string name="flashAnimation">Screen flash on tick</string>
+    <string name="flashAnimationSummary">Toggle screen blink effect when metronome makes one tick</string>
+    <string name="performerTitle">Performer - Title</string>
 
     <string name="soundOne">Sound 1</string>
     <string name="soundTwo">Sound 2</string>
@@ -23,6 +25,12 @@
     <string name="english">English</string>
     <string name="polish">Polski</string>
     <string name="german">Deutsch</string>
-    <string name="composerTitle">Composer - Title</string>
+    <string name="storagePermGranted">Storage permission granted. Please press the import button again</string>
+    <string name="baseImpSuccess">Database imported successfully! Tap again to hide imported songs</string>
+    <string name="cantImpData">Cannot import data. File doesn\'t exist or it\'s wrong named or it\'s wrong formatted</string>
+    <string name="cantReadStorage">Cannot read from external storage</string>
+    <string name="permissionInfo">You must grant storage permission to import data</string>
+    <string name="holdToReset">Hold tap button to reset counter</string>
+
 
 </resources>

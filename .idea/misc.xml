@@ -4,8 +4,10 @@
     <option name="filePathToZoomLevelMap">
       <map>
         <entry key="..\:/AndroidStudioProjects/Metronom/app/src/main/res/drawable-v24/ic_launcher_foreground.xml" value="0.213" />
+        <entry key="..\:/AndroidStudioProjects/Metronom/app/src/main/res/drawable/active_dot.xml" value="0.243" />
         <entry key="..\:/AndroidStudioProjects/Metronom/app/src/main/res/drawable/ic_add.xml" value="0.214" />
         <entry key="..\:/AndroidStudioProjects/Metronom/app/src/main/res/drawable/ic_arrow_left.xml" value="0.214" />
+        <entry key="..\:/AndroidStudioProjects/Metronom/app/src/main/res/drawable/ic_arrow_right.xml" value="0.243" />
         <entry key="..\:/AndroidStudioProjects/Metronom/app/src/main/res/drawable/ic_baseline_settings_24.xml" value="0.213" />
         <entry key="..\:/AndroidStudioProjects/Metronom/app/src/main/res/drawable/ic_import.xml" value="0.214" />
         <entry key="..\:/AndroidStudioProjects/Metronom/app/src/main/res/drawable/ic_launcher_background.xml" value="0.213" />
@@ -14,6 +16,7 @@
         <entry key="..\:/AndroidStudioProjects/Metronom/app/src/main/res/drawable/ic_play.xml" value="0.214" />
         <entry key="..\:/AndroidStudioProjects/Metronom/app/src/main/res/drawable/ic_touch.xml" value="0.214" />
         <entry key="..\:/AndroidStudioProjects/Metronom/app/src/main/res/drawable/layout_border.xml" value="0.214" />
+        <entry key="..\:/AndroidStudioProjects/Metronom/app/src/main/res/drawable/non_active_dot.xml" value="0.243" />
         <entry key="..\:/AndroidStudioProjects/Metronom/app/src/main/res/drawable/roundcorner.xml" value="0.214" />
         <entry key="..\:/AndroidStudioProjects/Metronom/app/src/main/res/drawable/textborder.xml" value="0.213" />
         <entry key="..\:/AndroidStudioProjects/Metronom/app/src/main/res/layout/activity_main.xml" value="0.33" />
