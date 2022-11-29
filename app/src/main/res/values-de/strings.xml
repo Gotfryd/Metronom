@@ -32,6 +32,9 @@
     <string name="permissionInfo">You must grant storage permission to import data</string>
     <string name="holdToReset">Hold tap button to reset counter</string>
     <string name="allowPermission">Select \"Allow management of all files\" to grant database reading permissions</string>
+    <string name="tapReset">Tap counter has been reset</string>
+    <string name="baseHidden">Database has been closed</string>
+    <string name="exceededBpmRange">Illegal BPM value. Please set the BPM value between 1 and 300.</string>
 
 
 </resources>

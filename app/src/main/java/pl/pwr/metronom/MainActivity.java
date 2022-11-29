@@ -93,6 +93,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private int STORAGE_PERMISSION_CODE = 1;
     final int SETTINGS_ACTIVITY = 1;
     int holdDelay = 80;
+    int minBpm = 1; // 1 poniewaz jezeli Timer dostanie wartosc mniejsza niz 1 ms to crash aplikacji
+    int maxBpm = 300; // 300 poniewaz jest to juz bardzo wysoka wartosc i jest to prog w ktorym zaczyna sie gatunek muzyki Speedcore czyli ekstremalnie szybkiej. BPM powyzej 200 sa juz rzadko uzywane
     long summedTapsTime;
     long averageTapsTime;
     short currentTact;
@@ -254,6 +256,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 //bpmEditTextInc.setText(String.valueOf((90)));
                 setNewBpm(90);
                 stopTimer();
+                Toast.makeText(MainActivity.this, R.string.tapReset, Toast.LENGTH_SHORT).show();
                 return true;
             }
         });
@@ -482,30 +485,38 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     public void startTimer(){
-        checkBpmLimit();
-        currentTact = 0;
 
-        if(isAnimationEnabled) {
-            blinkAnimation = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.blink);
-            blinkAnimation.setDuration(60000 / Integer.valueOf(bpmEditTextInc.getText().toString()));
-        }
+        if(isBpmInRange(Integer.valueOf(bpmEditTextInc.getText().toString()))){
 
-        tickTimer = new Timer("metronomeCounter", true);
+            currentTact = 0;
+            if(isAnimationEnabled) {
+                blinkAnimation = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.blink);
+                blinkAnimation.setDuration(60000 / Integer.valueOf(bpmEditTextInc.getText().toString()));
+            }
 
-        tickTone = new TimerTask(){
-            @Override
-            public void run(){
+            tickTimer = new Timer("metronomeCounter", true);
+
+            tickTone = new TimerTask(){
+                @Override
+                public void run(){
                     tactController();
                     tickSound.start();
                     if (isAnimationEnabled) {
                         myConstraintLayout.startAnimation(blinkAnimation);
                     }
-            }
-        };
+                }
+            };
 
-        tickTimer.scheduleAtFixedRate(tickTone, 1000, 60000/Integer.valueOf(bpmEditTextInc.getText().toString()));
-        isPlaying=true; //IllegalArgumentException:	if delay < 0, or delay + System.currentTimeMillis() < 0, or period <= 0 (period musi trwac przynajmniej 1 ms)
-        pausePlayButton.setImageResource(R.drawable.ic_pause);
+            tickTimer.scheduleAtFixedRate(tickTone, 1000, 60000 / Integer.valueOf(bpmEditTextInc.getText().toString()));
+            isPlaying=true; //IllegalArgumentException:	if delay < 0, or delay + System.currentTimeMillis() < 0, or period <= 0 (period musi trwac przynajmniej 1 ms)
+            pausePlayButton.setImageResource(R.drawable.ic_pause);
+
+        }
+        else{
+        Toast.makeText(MainActivity.this, this.getString(R.string.exceededBpmRange), Toast.LENGTH_SHORT).show();
+            return;
+        }
+
     }
 
     private void tactController() {
@@ -536,21 +547,28 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
 
-
-    public void checkBpmLimit() {
-        if(bpmAmount < 1){
-            System.out.println("BPM cannot be below 1"); // DO DOKONCZENIA
-            //stop funkcje
+    private void setNewBpm(int newBpm) {
+        if(isBpmInRange(newBpm)) {
+            bpmEditTextInc.setText(String.valueOf(newBpm));
+        }
+        else{
+            Toast.makeText(MainActivity.this, this.getString(R.string.exceededBpmRange), Toast.LENGTH_SHORT).show();
         }
     }
 
-    private void setNewBpm(int newBpm) {
-        bpmEditTextInc.setText(String.valueOf(newBpm));
+    private void incOrDecBpm(int newBpm) {
+        if(isBpmInRange(bpmAmount + newBpm)) {
+            bpmEditTextInc.setText(String.valueOf(bpmAmount + newBpm));
+        }
+        else{
+            Toast.makeText(MainActivity.this, this.getString(R.string.exceededBpmRange), Toast.LENGTH_SHORT).show();
+        }
     }
 
-    private void incOrDecBpm(int newBpm) {
-        bpmEditTextInc.setText(String.valueOf(bpmAmount+newBpm));
+    private boolean isBpmInRange(int newBpm) {
+        return newBpm >= minBpm && newBpm <= maxBpm;
     }
+
 
 
     public void setNewBpmAndNameFromBase(){
@@ -612,11 +630,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         else if (isBetween(bpmAmount, 177, 199)) {
             tempoMarking.setText("presto");
         }
-        else if (bpmAmount>=200) {
+        else if (isBetween(bpmAmount, 200, 300)) {
             tempoMarking.setText("prestissimo");
-        }
-        else if (bpmAmount<=0){
-            tempoMarking.setText("BPM cannot be below 1");
         }
         else{
             tempoMarking.setText("");
@@ -754,6 +769,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                 previousSongButton.setEnabled(true);
                                 nextSongButton.setEnabled(true);
                                 songName.setEnabled(true);
+                                importButton.setColorFilter(Color.argb(255, 0, 255, 0));
                                 isImportActive = true;
                                 setNewBpmAndNameFromBase();
                                 setTempoMarking();
@@ -761,8 +777,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                 previousSongButton.setEnabled(false);
                                 nextSongButton.setEnabled(false);
                                 songName.setEnabled(false);
+                                importButton.clearColorFilter();
                                 isImportActive = false;
                                 this.stopTimer();
+                                Toast.makeText(MainActivity.this, R.string.baseHidden, Toast.LENGTH_SHORT).show();
                             }
                         } else {
                             Toast.makeText(MainActivity.this, this.getString(R.string.cantImpData), Toast.LENGTH_SHORT).show();
