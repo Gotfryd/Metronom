@@ -31,6 +31,7 @@
     <string name="cantReadStorage">Cannot read from external storage</string>
     <string name="permissionInfo">You must grant storage permission to import data</string>
     <string name="holdToReset">Hold tap button to reset counter</string>
+    <string name="allowPermission">Select \"Allow management of all files\" to grant database reading permissions</string>
 
 
 </resources>

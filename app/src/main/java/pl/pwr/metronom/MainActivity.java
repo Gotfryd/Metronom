@@ -8,6 +8,7 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
@@ -26,9 +27,12 @@ import android.graphics.Color;
 import android.graphics.drawable.AnimationDrawable;
 import android.media.Image;
 import android.media.MediaPlayer;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
+import android.provider.Settings;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.Menu;
@@ -247,7 +251,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 averageTapsTime = 0;
                 tapCounter = 0;
                 firstTap = true;
-                bpmEditTextInc.setText(String.valueOf((90)));
+                //bpmEditTextInc.setText(String.valueOf((90)));
+                setNewBpm(90);
                 stopTimer();
                 return true;
             }
@@ -261,7 +266,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     public void run() {
                         if (!incrementButton.isPressed()) return;
                         bpmAmount = Integer.valueOf(bpmEditTextInc.getText().toString()).intValue();
-                        bpmEditTextInc.setText(String.valueOf(bpmAmount+1));
+                        //bpmEditTextInc.setText(String.valueOf(bpmAmount+1));
+                        incOrDecBpm(1);
                         if(isPlaying) {
                             stopTimer(); // jesli metronom gra to go wylacz, zwieksz bpm i wlacz
                             startTimer();
@@ -286,7 +292,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     public void run() {
                         if (!decrementButton.isPressed()) return;
                         bpmAmount = Integer.valueOf(bpmEditTextInc.getText().toString()).intValue();
-                        bpmEditTextInc.setText(String.valueOf(bpmAmount-1));
+                        //bpmEditTextInc.setText(String.valueOf(bpmAmount-1));
+                        incOrDecBpm(-1);
                         if(isPlaying) {
                             stopTimer(); // jesli metronom gra to go wylacz, zwieksz bpm i wlacz
                             startTimer();
@@ -505,21 +512,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         switch(currentTact){
             case 0:
-//                beatDots[currentTact].setColorFilter(Color.argb(255, 0, 255, 0));
-//                beatDots[beatDots.length-1].clearColorFilter();
                 setTactDotsColors(currentTact, beatDots.length-1);
                 currentTact++;
                 break;
             case 1:
             case 2:
-//                beatDots[currentTact].setColorFilter(Color.argb(255, 0, 255, 0));
-//                beatDots[currentTact-1].clearColorFilter();
                 setTactDotsColors(currentTact, currentTact-1);
                 currentTact++;
                 break;
             case 3:
-//                beatDots[currentTact].setColorFilter(Color.argb(255, 0, 255, 0));
-//                beatDots[currentTact-1].clearColorFilter();
                 setTactDotsColors(currentTact, currentTact-1);
                 currentTact = 0;
                 break;
@@ -543,8 +544,18 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
+    private void setNewBpm(int newBpm) {
+        bpmEditTextInc.setText(String.valueOf(newBpm));
+    }
+
+    private void incOrDecBpm(int newBpm) {
+        bpmEditTextInc.setText(String.valueOf(bpmAmount+newBpm));
+    }
+
+
     public void setNewBpmAndNameFromBase(){
-        bpmEditTextInc.setText(String.valueOf(importedSongs.get(currentSongNo).getTrackBpm())); // ustaw BPM
+        //bpmEditTextInc.setText(String.valueOf(importedSongs.get(currentSongNo).getTrackBpm()));
+        setNewBpm(importedSongs.get(currentSongNo).getTrackBpm()); // ustaw BPM
         songName.setText(String.valueOf(importedSongs.get(currentSongNo).getComposer()+" - "+importedSongs.get(currentSongNo).getTitle())); // ustaw wykonawce i nazwe utworu
     }
 
@@ -614,28 +625,35 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.R)
     private void requestStoragePermission() {
-        if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.READ_EXTERNAL_STORAGE)) {
-            ActivityCompat.requestPermissions(MainActivity.this, new String[] {Manifest.permission.READ_EXTERNAL_STORAGE}, STORAGE_PERMISSION_CODE);
-        }
-        else {
-            ActivityCompat.requestPermissions(this, new String[] {Manifest.permission.READ_EXTERNAL_STORAGE}, STORAGE_PERMISSION_CODE);
-        }
+//        if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.READ_EXTERNAL_STORAGE)) {
+//            ActivityCompat.requestPermissions(MainActivity.this, new String[] {Manifest.permission.READ_EXTERNAL_STORAGE}, STORAGE_PERMISSION_CODE);
+//        }
+//        else {
+//            ActivityCompat.requestPermissions(this, new String[] {Manifest.permission.READ_EXTERNAL_STORAGE}, STORAGE_PERMISSION_CODE);
+//        }
+        Toast.makeText(MainActivity.this, this.getString(R.string.allowPermission), Toast.LENGTH_SHORT).show();
+        Intent intent = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION);
+        Uri uri = Uri.fromParts("package", getPackageName(), null);
+        intent.setData(uri);
+        startActivity(intent);
     }
 
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == STORAGE_PERMISSION_CODE) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                Toast.makeText(MainActivity.this, this.getString(R.string.storagePermGranted), Toast.LENGTH_SHORT).show();
-            } else {
-                Toast.makeText(MainActivity.this, this.getString(R.string.permissionInfo), Toast.LENGTH_SHORT).show();
-            }
-        }
-    }
+//    @Override
+//    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+//        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+//        if (requestCode == STORAGE_PERMISSION_CODE) {
+//            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+//                Toast.makeText(MainActivity.this, this.getString(R.string.storagePermGranted), Toast.LENGTH_SHORT).show();
+//            } else {
+//                Toast.makeText(MainActivity.this, this.getString(R.string.permissionInfo), Toast.LENGTH_SHORT).show();
+//            }
+//        }
+//    }
 
 
+    @RequiresApi(api = Build.VERSION_CODES.R)
     @Override
     public void onClick(View view) {
 
@@ -645,7 +663,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             case R.id.incrementButton:
 
                 bpmAmount = Integer.valueOf(bpmEditTextInc.getText().toString()).intValue();
-                bpmEditTextInc.setText(String.valueOf(bpmAmount+1));
+                //bpmEditTextInc.setText(String.valueOf(bpmAmount+1));
+                incOrDecBpm(1);
                 if(isPlaying) {
                     stopTimer(); // jesli metronom gra to go wylacz, zwieksz bpm i wlacz
                     startTimer();
@@ -659,7 +678,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             case R.id.decrementButton:
 
                 bpmAmount = Integer.valueOf(bpmEditTextInc.getText().toString()).intValue();
-                bpmEditTextInc.setText(String.valueOf(bpmAmount-1));
+                //bpmEditTextInc.setText(String.valueOf(bpmAmount-1));
+                incOrDecBpm(-1);
                 if(isPlaying) {
                     stopTimer();
                     startTimer();
@@ -698,7 +718,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     System.out.println("time: " + tapStopwatch); // formatted string like "12.3 ms"
                     summedTapsTime =+ tapStopwatch.elapsed(MILLISECONDS);
                     averageTapsTime = summedTapsTime/tapCounter;
-                    bpmEditTextInc.setText(String.valueOf((60000/averageTapsTime))); //wylicz srednia w ms
+                    //bpmEditTextInc.setText(String.valueOf((60000/averageTapsTime))); //wylicz srednia w bpm
+                    setNewBpm((int) (60000/averageTapsTime));
                     tapStopwatch.start();
                 }
 
@@ -720,8 +741,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             case R.id.importButton: //pierwsze klikniecie importuje baze i wlacza 3 przyciski do sterowania, kolejne klikniecie zwija przyciski
 
-                if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
-
+             //   if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
+                if (Environment.isExternalStorageManager()) {
                     if (isExternalStorageReadable()) {
 
                         if (importAndDataRead()) {
@@ -743,15 +764,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                 isImportActive = false;
                                 this.stopTimer();
                             }
-                        }
-                        else {
+                        } else {
                             Toast.makeText(MainActivity.this, this.getString(R.string.cantImpData), Toast.LENGTH_SHORT).show();
                         }
 
-                    }
-                    else{
+                    } else {
                         Toast.makeText(MainActivity.this, this.getString(R.string.cantReadStorage), Toast.LENGTH_SHORT).show();
                     }
+                    //  }
                 }
                 else {
                     requestStoragePermission();
