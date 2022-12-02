@@ -16,8 +16,12 @@ import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 import androidx.preference.PreferenceManager;
+
 import android.Manifest;
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.ContextWrapper;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -25,8 +29,13 @@ import android.content.res.ColorStateList;
 import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.drawable.AnimationDrawable;
+import android.media.AudioFormat;
+import android.media.AudioManager;
+import android.media.AudioRecord;
+import android.media.AudioTrack;
 import android.media.Image;
 import android.media.MediaPlayer;
+import android.media.MediaRecorder;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -53,13 +62,13 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-
 import com.google.common.base.Stopwatch;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
@@ -68,7 +77,9 @@ import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
 
+
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
+
 
     boolean isPlaying = false;
     boolean isImportActive = false;
@@ -76,10 +87,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     boolean firstTap = true;
     boolean isAnimationEnabled = true;
 
-    String fileName;
-    String baseDir;
-    String pathDir;
+    String fileName = "database.csv";
+    String filePath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).toString();
+    String dataBaseContent = "Wykonawca;Tytuł;Tempo (BPM)\n" + "Metallica;The Unforgiven;69\n" + "Red Hot Chili Peppers;Under the Bridge;84";
     String line;
+    String audioFileName = "AudioSample";
+    String audioFileExtension = ".mp3";
 
     File csvFile;
 
@@ -111,7 +124,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     Handler handler = new Handler();
     Runnable runnable;
 
-    MediaPlayer tickSound;;
+    MediaPlayer tickSound;
+
     Timer tickTimer;
     TimerTask tickTone;
 
@@ -138,6 +152,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     SharedPreferences SP;
 
     ActivityResultLauncher<Intent> settingsActivityResultLauncher;
+
+    MediaRecorder mediaRecorder;
+    final double referenceAmplitude = 0.0001;
+    private String AudioSavaPath = null;
+    boolean isRecording = false;
+
+    String path = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -178,11 +199,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         nextSongButton = (ImageButton) findViewById(R.id.nextSongButton);
         nextSongButton.setOnClickListener(this);
 
-//        tactOne = (ImageView) findViewById(R.id.tactOne);
-//        tactTwo = (ImageView) findViewById(R.id.tactTwo);
-//        tactThree = (ImageView) findViewById(R.id.tactThree);
-//        tactFour = (ImageView) findViewById(R.id.tactFour);
-
         myConstraintLayout = (ConstraintLayout) findViewById(R.id.myConstraintLayout);
         myConstraintLayout.setOnClickListener(this);
 
@@ -207,26 +223,24 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         new ActivityResultCallback<ActivityResult>() {
                             @Override
                             public void onActivityResult(ActivityResult result) {
-                                    Intent data = result.getData();
-                                    int resultCode = result.getResultCode();
-                                    if(resultCode == RESULT_OK) {
-                                        recreate();
-                                    }
-                                    else{
-                                        recreate();
-                                    }
+                                Intent data = result.getData();
+                                int resultCode = result.getResultCode();
+                                if (resultCode == RESULT_OK) {
+                                    recreate();
+                                } else {
+                                    recreate();
+                                }
                             }
                         });
-
         setTickEffect();
         setAnimationState();
 
         tickTimer = new Timer("metronomeCounter", true);
 
-        tickTone = new TimerTask(){
+        tickTone = new TimerTask() {
             @Override
-            public void run(){
-               tickSound.start();
+            public void run() {
+                tickSound.start();
             }
         };
 
@@ -235,9 +249,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
                 bpmAmount = Integer.valueOf(bpmEditTextInc.getText().toString()).intValue();
                 setTempoMarking();
-                if(actionId == EditorInfo.IME_ACTION_DONE){
+                if (actionId == EditorInfo.IME_ACTION_DONE) {
                     stopTimer();
-                    if(!isPlaying) {
+                    if (!isPlaying) {
                         startTimer();
                     }
                 }
@@ -261,6 +275,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
         });
 
+        importButton.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View view) {
+                generateCsvFile();
+                Toast.makeText(MainActivity.this, "Database generated. You can edit it to add your songs", Toast.LENGTH_SHORT).show();
+                return true;
+            }
+        });
+
         incrementButton.setOnLongClickListener(new View.OnLongClickListener() {
             @Override
             public boolean onLongClick(View view) {
@@ -271,11 +294,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         bpmAmount = Integer.valueOf(bpmEditTextInc.getText().toString()).intValue();
                         //bpmEditTextInc.setText(String.valueOf(bpmAmount+1));
                         incOrDecBpm(1);
-                        if(isPlaying) {
+                        if (isPlaying) {
                             stopTimer(); // jesli metronom gra to go wylacz, zwieksz bpm i wlacz
                             startTimer();
-                        }
-                        else{
+                        } else {
                             stopTimer(); // jezeli nie gra to zatrzymaj i zwieksz bpm ale nie wlaczaj
                         }
                         setTempoMarking();
@@ -297,11 +319,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         bpmAmount = Integer.valueOf(bpmEditTextInc.getText().toString()).intValue();
                         //bpmEditTextInc.setText(String.valueOf(bpmAmount-1));
                         incOrDecBpm(-1);
-                        if(isPlaying) {
+                        if (isPlaying) {
                             stopTimer(); // jesli metronom gra to go wylacz, zwieksz bpm i wlacz
                             startTimer();
-                        }
-                        else{
+                        } else {
                             stopTimer(); // jezeli nie gra to zatrzymaj i zwieksz bpm ale nie wlaczaj
                         }
                         setTempoMarking();
@@ -316,8 +337,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
 
-
-
 // koniec onCreate
 
 
@@ -330,12 +349,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
 
-        switch (item.getItemId())
-        {
+        switch (item.getItemId()) {
             case R.id.action_settings:
                 stopTimer();
                 settingsIntent = new Intent(this, SettingsActivity.class);
-               // startActivityForResult(settingsIntent, SETTINGS_ACTIVITY); // tak sie robi po staremu
+                // startActivityForResult(settingsIntent, SETTINGS_ACTIVITY); // tak sie robi po staremu
                 settingsActivityResultLauncher.launch(settingsIntent);
                 break;
 
@@ -352,13 +370,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 //        }
 //    }
 
-    public void setAppTheme(){
+    public void setAppTheme() {
         SP = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
 
-        if(SP.getBoolean("night_mode_switch", false)){
+        if (SP.getBoolean("night_mode_switch", false)) {
             AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
-        }
-        else{
+        } else {
             AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
         }
     }
@@ -367,7 +384,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         SP = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
         effectName = SP.getString("sound_effects_list", "soundone");
 
-        switch(effectName) {
+        switch (effectName) {
             case "soundone":
                 tickSound = MediaPlayer.create(this, R.raw.soundone);
                 break;
@@ -391,10 +408,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private void setAnimationState() {
         SP = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
 
-        if(SP.getBoolean("blink_animation_switch", true)){
+        if (SP.getBoolean("blink_animation_switch", true)) {
             isAnimationEnabled = true;
-        }
-        else{
+        } else {
             isAnimationEnabled = false;
         }
     }
@@ -404,7 +420,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         SP = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
         languageCode = SP.getString("language_list", "en");
 
-        String languageToLoad  = languageCode; // tutaj podaje skrot jezyka (2 litery)
+        String languageToLoad = languageCode; // tutaj podaje skrot jezyka (2 litery)
         Locale locale = new Locale(languageToLoad);
         Locale.setDefault(locale);
         Configuration config = new Configuration();
@@ -416,89 +432,99 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private boolean isExternalStorageReadable() {
         if (Environment.MEDIA_MOUNTED.equals(Environment.getExternalStorageState())
                 || Environment.MEDIA_MOUNTED_READ_ONLY.equals(Environment.getExternalStorageState())) {
-           // Toast.makeText(MainActivity.this, "External storage is readable", Toast.LENGTH_SHORT).show();
+            // Toast.makeText(MainActivity.this, "External storage is readable", Toast.LENGTH_SHORT).show();
             return true;
-        }
-        else{
-          //  Toast.makeText(MainActivity.this, "External storage is not readable", Toast.LENGTH_SHORT).show();
+        } else {
+            //  Toast.makeText(MainActivity.this, "External storage is not readable", Toast.LENGTH_SHORT).show();
             return false;
         }
     }
 
 
     public boolean importAndDataRead() {
-            line = "";
+        line = "";
 
-            try{
+        try {
+            csvFile = new File(filePath, fileName);
+            fis = new FileInputStream(csvFile);
+            isr = new InputStreamReader(fis);
+            buff = new BufferedReader(isr);
+            buff.readLine();
+            //String line = null; // gdyby String line wyzej nie zadzialal
 
-                fileName = "database.csv";
-              //  baseDir = Environment.getExternalStorageDirectory().getAbsolutePath();
-              //  pathDir = baseDir + "/Download/";
-                pathDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).toString();
-                csvFile = new File(pathDir, fileName);
+            while ((line = buff.readLine()) != null) {
+                Log.d("MyActivity", "Line: " + line);
+                String[] tokens = line.split(";"); // Oddziel znakiem ;
 
-                fis = new FileInputStream(csvFile);
-                isr = new InputStreamReader(fis);
-                buff = new BufferedReader(isr);
-                buff.readLine();
-                //String line = null; // gdyby String line wyzej nie zadzialal
-
-                    while((line = buff.readLine()) != null){
-                        Log.d("MyActivity", "Line: " + line);
-                        String[] tokens = line.split(";"); // Oddziel znakiem ;
-
-                        //odczytaj dane
-                        SongsList sample = new SongsList();
-                        sample.setComposer(tokens[0]);                  //
-                        sample.setTitle(tokens[1]);                     // mozna zrobic ostrzezenie, ze rekord jest pusty w pliku csv
-                        sample.setTrackBpm(Short.parseShort(tokens[2]));//
-                        importedSongs.add(sample);
-                        Log.d("My Activity", "Just created: " + sample);
-                    }
-
-                    fis.close();
+                //odczytaj dane
+                SongsList sample = new SongsList();
+                sample.setComposer(tokens[0]);                  //
+                sample.setTitle(tokens[1]);                     // mozna zrobic ostrzezenie, ze rekord jest pusty w pliku csv
+                sample.setTrackBpm(Short.parseShort(tokens[2]));//
+                importedSongs.add(sample);
+                Log.d("My Activity", "Just created: " + sample);
             }
 
-            catch(FileNotFoundException e){
-                System.out.println("File doesn't exist!");
-                e.printStackTrace();
-                return false;
-            }
-            catch(IOException e){
-                Log.wtf("My Activity", "Error reading data file on line" + line, e);
-                e.printStackTrace();
-                return false;
-            }
+            fis.close();
+        } catch (FileNotFoundException e) {
+            System.out.println("File doesn't exist!");
+            e.printStackTrace();
+            return false;
+        } catch (IOException e) {
+            Log.wtf("My Activity", "Error reading data file on line" + line, e);
+            e.printStackTrace();
+            return false;
+        }
 
-            return true;
+        return true;
     }
 
-    public void stopTimer(){
+    private void generateCsvFile() {
+        fileName = "database.csv";
+        filePath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).toString();
+        csvFile = new File(filePath, fileName);
+        if(csvFile.exists()){
+            Toast.makeText(MainActivity.this, "Database already exists!", Toast.LENGTH_SHORT).show();
+        }
+        else{
+            csvFile = new File(filePath, fileName);
+            try {
+                FileWriter writer = new FileWriter(csvFile);
+                writer.append(dataBaseContent);
+                writer.flush();
+                writer.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public void stopTimer() {
         tickTimer.cancel();
-        isPlaying=false;
+        isPlaying = false;
         pausePlayButton.setImageResource(R.drawable.ic_play);
 
         currentTact = 0;
-        for(int i=0;i<beatDots.length; i++) {
+        for (int i = 0; i < beatDots.length; i++) {
             beatDots[i].clearColorFilter();
         }
     }
 
-    public void startTimer(){
+    public void startTimer() {
 
-        if(isBpmInRange(Integer.valueOf(bpmEditTextInc.getText().toString()))){
+        if (isBpmInRange(Integer.valueOf(bpmEditTextInc.getText().toString()))) {
 
             currentTact = 0;
-            if(isAnimationEnabled) {
+            if (isAnimationEnabled) {
                 blinkAnimation = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.blink);
                 blinkAnimation.setDuration(60000 / Integer.valueOf(bpmEditTextInc.getText().toString()));
             }
 
             tickTimer = new Timer("metronomeCounter", true);
 
-            tickTone = new TimerTask(){
+            tickTone = new TimerTask() {
                 @Override
-                public void run(){
+                public void run() {
                     tactController();
                     tickSound.start();
                     if (isAnimationEnabled) {
@@ -508,12 +534,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             };
 
             tickTimer.scheduleAtFixedRate(tickTone, 1000, 60000 / Integer.valueOf(bpmEditTextInc.getText().toString()));
-            isPlaying=true; //IllegalArgumentException:	if delay < 0, or delay + System.currentTimeMillis() < 0, or period <= 0 (period musi trwac przynajmniej 1 ms)
+            isPlaying = true; //IllegalArgumentException:	if delay < 0, or delay + System.currentTimeMillis() < 0, or period <= 0 (period musi trwac przynajmniej 1 ms)
             pausePlayButton.setImageResource(R.drawable.ic_pause);
 
-        }
-        else{
-        Toast.makeText(MainActivity.this, this.getString(R.string.exceededBpmRange), Toast.LENGTH_SHORT).show();
+        } else {
+            Toast.makeText(MainActivity.this, this.getString(R.string.exceededBpmRange), Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -521,18 +546,18 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private void tactController() {
 
-        switch(currentTact){
+        switch (currentTact) {
             case 0:
-                setTactDotsColors(currentTact, beatDots.length-1);
+                setTactDotsColors(currentTact, beatDots.length - 1);
                 currentTact++;
                 break;
             case 1:
             case 2:
-                setTactDotsColors(currentTact, currentTact-1);
+                setTactDotsColors(currentTact, currentTact - 1);
                 currentTact++;
                 break;
             case 3:
-                setTactDotsColors(currentTact, currentTact-1);
+                setTactDotsColors(currentTact, currentTact - 1);
                 currentTact = 0;
                 break;
             default:
@@ -541,26 +566,24 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
-    private void setTactDotsColors(int dotToColor , int dotToClear){
+    private void setTactDotsColors(int dotToColor, int dotToClear) {
         beatDots[dotToColor].setColorFilter(Color.argb(255, 0, 255, 0));
         beatDots[dotToClear].clearColorFilter();
     }
 
 
     private void setNewBpm(int newBpm) {
-        if(isBpmInRange(newBpm)) {
+        if (isBpmInRange(newBpm)) {
             bpmEditTextInc.setText(String.valueOf(newBpm));
-        }
-        else{
+        } else {
             Toast.makeText(MainActivity.this, this.getString(R.string.exceededBpmRange), Toast.LENGTH_SHORT).show();
         }
     }
 
     private void incOrDecBpm(int newBpm) {
-        if(isBpmInRange(bpmAmount + newBpm)) {
+        if (isBpmInRange(bpmAmount + newBpm)) {
             bpmEditTextInc.setText(String.valueOf(bpmAmount + newBpm));
-        }
-        else{
+        } else {
             Toast.makeText(MainActivity.this, this.getString(R.string.exceededBpmRange), Toast.LENGTH_SHORT).show();
         }
     }
@@ -570,70 +593,54 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
 
-
-    public void setNewBpmAndNameFromBase(){
+    public void setNewBpmAndNameFromBase() {
         //bpmEditTextInc.setText(String.valueOf(importedSongs.get(currentSongNo).getTrackBpm()));
         setNewBpm(importedSongs.get(currentSongNo).getTrackBpm()); // ustaw BPM
-        songName.setText(String.valueOf(importedSongs.get(currentSongNo).getComposer()+" - "+importedSongs.get(currentSongNo).getTitle())); // ustaw wykonawce i nazwe utworu
+        songName.setText(String.valueOf(importedSongs.get(currentSongNo).getComposer() + " - " + importedSongs.get(currentSongNo).getTitle())); // ustaw wykonawce i nazwe utworu
     }
 
     public static boolean isBetween(int x, int lower, int upper) {
         return lower <= x && x <= upper;
     }
 
-    public void setTempoMarking(){
+
+    public void setTempoMarking() {
 
         bpmAmount = Integer.valueOf(bpmEditTextInc.getText().toString()).intValue();
 
         if (isBetween(bpmAmount, 1, 29)) {
             tempoMarking.setText("Larghissimo");
-        }
-        else if (isBetween(bpmAmount, 30, 39)) {
+        } else if (isBetween(bpmAmount, 30, 39)) {
             tempoMarking.setText("Grave");
-        }
-        else if (isBetween(bpmAmount, 40, 49)) {
+        } else if (isBetween(bpmAmount, 40, 49)) {
             tempoMarking.setText("largo");
-        }
-        else if (isBetween(bpmAmount, 50, 51)) {
+        } else if (isBetween(bpmAmount, 50, 51)) {
             tempoMarking.setText("lento");
-        }
-        else if (isBetween(bpmAmount, 52, 54)) {
+        } else if (isBetween(bpmAmount, 52, 54)) {
             tempoMarking.setText("larghetto");
-        }
-        else if (isBetween(bpmAmount, 55, 59)) {
+        } else if (isBetween(bpmAmount, 55, 59)) {
             tempoMarking.setText("adagio");
-        }
-        else if (isBetween(bpmAmount, 60, 70)) {
+        } else if (isBetween(bpmAmount, 60, 70)) {
             tempoMarking.setText("andante");
-        }
-        else if (isBetween(bpmAmount, 88, 92)) {
+        } else if (isBetween(bpmAmount, 88, 92)) {
             tempoMarking.setText("moderato");
-        }
-        else if (bpmAmount == 96) {
+        } else if (bpmAmount == 96) {
             tempoMarking.setText("andantino");
-        }
-        else if (isBetween(bpmAmount, 104, 119)) {
+        } else if (isBetween(bpmAmount, 104, 119)) {
             tempoMarking.setText("allegretto");
-        }
-        else if (isBetween(bpmAmount, 120, 138)) {
+        } else if (isBetween(bpmAmount, 120, 138)) {
             tempoMarking.setText("allegro");
-        }
-        else if (isBetween(bpmAmount, 160, 167)) {
+        } else if (isBetween(bpmAmount, 160, 167)) {
             tempoMarking.setText("vivo & vivace");
-        }
-        else if (isBetween(bpmAmount, 168, 175)) {
+        } else if (isBetween(bpmAmount, 168, 175)) {
             tempoMarking.setText("presto");
-        }
-        else if (bpmAmount == 176) {
+        } else if (bpmAmount == 176) {
             tempoMarking.setText("presto vivacissimo");
-        }
-        else if (isBetween(bpmAmount, 177, 199)) {
+        } else if (isBetween(bpmAmount, 177, 199)) {
             tempoMarking.setText("presto");
-        }
-        else if (isBetween(bpmAmount, 200, 300)) {
+        } else if (isBetween(bpmAmount, 200, 300)) {
             tempoMarking.setText("prestissimo");
-        }
-        else{
+        } else {
             tempoMarking.setText("");
         }
 
@@ -655,6 +662,101 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         startActivity(intent);
     }
 
+    private final int MY_PERMISSIONS_RECORD_AUDIO = 1;
+
+    private void requestAudioPermissions() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+            //When permission is not granted by user, show them message why this permission is needed.
+            if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.RECORD_AUDIO)) {
+                Toast.makeText(this, "Please grant permissions to record audio", Toast.LENGTH_LONG).show();
+                //Give user option to still opt-in the permissions
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.RECORD_AUDIO}, MY_PERMISSIONS_RECORD_AUDIO);
+           }
+            else {
+                // Show user dialog to grant permission to record audio
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.RECORD_AUDIO}, MY_PERMISSIONS_RECORD_AUDIO);
+            }
+        }
+        //If permission is granted, then go ahead recording audio
+        else if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+            //Go ahead with recording audio now
+
+            mediaRecorder = new MediaRecorder();
+            mediaRecorder.setAudioSource(MediaRecorder.AudioSource.MIC);
+            mediaRecorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
+            mediaRecorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
+            mediaRecorder.setOutputFile(getRecordingFilePath());
+            startRecording();
+
+            final double maxAmplitude = mediaRecorder.getMaxAmplitude();
+            final double amplitude = 20 * Math.log10(maxAmplitude / referenceAmplitude);
+            System.out.println("amplitude equals: " + amplitude);
+            System.out.println("media recorder started");
+        }
+            System.out.println("code executed");
+        }
+
+
+    private void startRecording() {
+        try {
+            mediaRecorder.prepare();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        mediaRecorder.start();
+        isRecording = true;
+    }
+
+    private void stopRecording() {
+        mediaRecorder.stop();
+        isRecording = false;
+    }
+
+    private String getRecordingFilePath() {
+        ContextWrapper contextWrapper = new ContextWrapper(getApplicationContext());
+        File music = contextWrapper.getExternalFilesDir(Environment.DIRECTORY_MUSIC);
+        File file = new File(music, audioFileName + audioFileExtension);
+        return file.getPath();
+    }
+
+    @Override
+    public void onBackPressed() {
+        new AlertDialog.Builder(this)
+                .setIcon(android.R.drawable.ic_dialog_dialer)
+                .setTitle("Closing application")
+                .setMessage("Are you sure you want to exit the application?")
+                .setPositiveButton("Yes", new DialogInterface.OnClickListener()
+                {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        finish();
+                    }
+
+                })
+                .setNegativeButton("No", null)
+                .show();
+    }
+
+    //Handling callback
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        switch (requestCode) {
+            case MY_PERMISSIONS_RECORD_AUDIO: {
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    // permission was granted, yay!
+
+                } else {
+                    // permission denied, boo! Disable the
+                    // functionality that depends on this permission.
+                    Toast.makeText(this, "Permissions Denied to record audio", Toast.LENGTH_LONG).show();
+                }
+                return;
+            }
+        }
+    }
+
+
 //    @Override
 //    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
 //        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
@@ -668,176 +770,171 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 //    }
 
 
-    @RequiresApi(api = Build.VERSION_CODES.R)
-    @Override
-    public void onClick(View view) {
+            @RequiresApi(api = Build.VERSION_CODES.R)
+            @Override
+            public void onClick (View view){
 
 
-        switch (view.getId()) {
+                switch (view.getId()) {
 
-            case R.id.incrementButton:
+                    case R.id.incrementButton:
 
-                bpmAmount = Integer.valueOf(bpmEditTextInc.getText().toString()).intValue();
-                //bpmEditTextInc.setText(String.valueOf(bpmAmount+1));
-                incOrDecBpm(1);
-                if(isPlaying) {
-                    stopTimer(); // jesli metronom gra to go wylacz, zwieksz bpm i wlacz
-                    startTimer();
-                }
-                else{
-                    stopTimer(); // jezeli nie gra to zatrzymaj i zwieksz bpm ale nie wlaczaj
-                }
-                setTempoMarking();
-                break;
-
-            case R.id.decrementButton:
-
-                bpmAmount = Integer.valueOf(bpmEditTextInc.getText().toString()).intValue();
-                //bpmEditTextInc.setText(String.valueOf(bpmAmount-1));
-                incOrDecBpm(-1);
-                if(isPlaying) {
-                    stopTimer();
-                    startTimer();
-                }
-                else{
-                    stopTimer();
-                }
-                setTempoMarking();
-                break;
-
-            case R.id.pausePlayButton:
-                if(isPlaying){
-                    this.stopTimer();
-                }
-                else{
-                    this.startTimer();
-                }
-                break;
-
-            case R.id.tapButton:
-                // ustawic bpm na podstawie tylko 2 klikniec - czas miedzy pierwszym a drugim klinieciem to bpm, po drugim kliknieciu resetuje sie funkcja i przycisk jest gotowy na ponowne wystukanie tempa
-
-                if(firstTap){ // pierwsze inicjujace klikniecie
-                    Toast.makeText(MainActivity.this, this.getString(R.string.holdToReset), Toast.LENGTH_SHORT).show();
-                    stopTimer();
-                    tapStopwatch = Stopwatch.createUnstarted();
-                    tapStopwatch.start();
-                    firstTap = false;
-
-                }
-                else{
-                    stopTimer();
-                    tapCounter++;
-                    System.out.println("tapCounter++ " + tapCounter);
-                    tapStopwatch.stop();
-                    System.out.println("time: " + tapStopwatch); // formatted string like "12.3 ms"
-                    summedTapsTime =+ tapStopwatch.elapsed(MILLISECONDS);
-                    averageTapsTime = summedTapsTime/tapCounter;
-                    //bpmEditTextInc.setText(String.valueOf((60000/averageTapsTime))); //wylicz srednia w bpm
-                    setNewBpm((int) (60000/averageTapsTime));
-                    tapStopwatch.start();
-                }
-
-                break;
-
-            case R.id.recordButton:
-                System.out.println("Sciezka do tego: " + getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS));
-                System.out.println("Sciezka do tego: " +Environment.getExternalStorageDirectory().getAbsolutePath());
-                if(!isRecordingActive){
-                    recordButton.setColorFilter(Color.argb(255, 0, 255, 0));
-                    isRecordingActive = true;
-                }
-                else{
-                    recordButton.clearColorFilter();
-                    isRecordingActive = false;
-                }
-
-                break;
-
-            case R.id.importButton: //pierwsze klikniecie importuje baze i wlacza 3 przyciski do sterowania, kolejne klikniecie zwija przyciski
-
-             //   if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
-                if (Environment.isExternalStorageManager()) {
-                    if (isExternalStorageReadable()) {
-
-                        if (importAndDataRead()) {
-
-                            if (!isImportActive) {
-                                Toast.makeText(MainActivity.this, this.getString(R.string.baseImpSuccess), Toast.LENGTH_SHORT).show();
-                                this.stopTimer();
-                                importAndDataRead();  // funkcja wczytujaca piosenki z tempem z pliku csv
-                                previousSongButton.setEnabled(true);
-                                nextSongButton.setEnabled(true);
-                                songName.setEnabled(true);
-                                importButton.setColorFilter(Color.argb(255, 0, 255, 0));
-                                isImportActive = true;
-                                setNewBpmAndNameFromBase();
-                                setTempoMarking();
-                            } else {
-                                previousSongButton.setEnabled(false);
-                                nextSongButton.setEnabled(false);
-                                songName.setEnabled(false);
-                                importButton.clearColorFilter();
-                                isImportActive = false;
-                                this.stopTimer();
-                                Toast.makeText(MainActivity.this, R.string.baseHidden, Toast.LENGTH_SHORT).show();
-                            }
+                        bpmAmount = Integer.valueOf(bpmEditTextInc.getText().toString()).intValue();
+                        //bpmEditTextInc.setText(String.valueOf(bpmAmount+1));
+                        incOrDecBpm(1);
+                        if (isPlaying) {
+                            stopTimer(); // jesli metronom gra to go wylacz, zwieksz bpm i wlacz
+                            startTimer();
                         } else {
-                            Toast.makeText(MainActivity.this, this.getString(R.string.cantImpData), Toast.LENGTH_SHORT).show();
+                            stopTimer(); // jezeli nie gra to zatrzymaj i zwieksz bpm ale nie wlaczaj
+                        }
+                        setTempoMarking();
+                        break;
+
+                    case R.id.decrementButton:
+
+                        bpmAmount = Integer.valueOf(bpmEditTextInc.getText().toString()).intValue();
+                        //bpmEditTextInc.setText(String.valueOf(bpmAmount-1));
+                        incOrDecBpm(-1);
+                        if (isPlaying) {
+                            stopTimer();
+                            startTimer();
+                        } else {
+                            stopTimer();
+                        }
+                        setTempoMarking();
+                        break;
+
+                    case R.id.pausePlayButton:
+
+                        if (isPlaying) {
+                            this.stopTimer();
+                        } else {
+                            this.startTimer();
+                        }
+                        break;
+
+                    case R.id.tapButton:
+                        // ustawic bpm na podstawie tylko 2 klikniec - czas miedzy pierwszym a drugim klinieciem to bpm, po drugim kliknieciu resetuje sie funkcja i przycisk jest gotowy na ponowne wystukanie tempa
+
+                        if (firstTap) { // pierwsze inicjujace klikniecie
+                            Toast.makeText(MainActivity.this, this.getString(R.string.holdToReset), Toast.LENGTH_SHORT).show();
+                            stopTimer();
+                            tapStopwatch = Stopwatch.createUnstarted();
+                            tapStopwatch.start();
+                            firstTap = false;
+
+                        } else {
+                            stopTimer();
+                            tapCounter++;
+                            System.out.println("tapCounter++ " + tapCounter);
+                            tapStopwatch.stop();
+                            System.out.println("time: " + tapStopwatch); // formatted string like "12.3 ms"
+                            summedTapsTime = +tapStopwatch.elapsed(MILLISECONDS);
+                            averageTapsTime = summedTapsTime / tapCounter;
+                            //bpmEditTextInc.setText(String.valueOf((60000/averageTapsTime))); //wylicz srednia w bpm
+                            setNewBpm((int) (60000 / averageTapsTime));
+                            tapStopwatch.start();
                         }
 
-                    } else {
-                        Toast.makeText(MainActivity.this, this.getString(R.string.cantReadStorage), Toast.LENGTH_SHORT).show();
-                    }
-                    //  }
+                        break;
+
+                    case R.id.recordButton:
+
+                        if (!isRecordingActive) {
+                            recordButton.setColorFilter(Color.argb(255, 0, 255, 0));
+                            isRecordingActive = true;
+                            requestAudioPermissions(); // rowniez wywolywana jest metoda startRecording();
+                        }
+                        else {
+                            recordButton.clearColorFilter();
+                            isRecordingActive = false;
+                            stopRecording();
+                        }
+
+                        break;
+
+                    case R.id.importButton: //pierwsze klikniecie importuje baze i wlacza 3 przyciski do sterowania, kolejne klikniecie zwija przyciski
+
+                        //   if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED) {
+                        if (Environment.isExternalStorageManager()) {
+                            if (isExternalStorageReadable()) {
+
+                                if (importAndDataRead()) {
+
+                                    if (!isImportActive) {
+                                        Toast.makeText(MainActivity.this, this.getString(R.string.baseImpSuccess), Toast.LENGTH_SHORT).show();
+                                        this.stopTimer();
+                                        importAndDataRead();  // funkcja wczytujaca piosenki z tempem z pliku csv
+                                        previousSongButton.setEnabled(true);
+                                        nextSongButton.setEnabled(true);
+                                        songName.setEnabled(true);
+                                        importButton.setColorFilter(Color.argb(255, 0, 255, 0));
+                                        isImportActive = true;
+                                        setNewBpmAndNameFromBase();
+                                        setTempoMarking();
+                                    } else {
+                                        previousSongButton.setEnabled(false);
+                                        nextSongButton.setEnabled(false);
+                                        songName.setEnabled(false);
+                                        importButton.clearColorFilter();
+                                        isImportActive = false;
+                                        this.stopTimer();
+                                        Toast.makeText(MainActivity.this, R.string.baseHidden, Toast.LENGTH_SHORT).show();
+                                    }
+                                } else {
+                                    Toast.makeText(MainActivity.this, this.getString(R.string.cantImpData), Toast.LENGTH_SHORT).show();
+                                }
+
+                            } else {
+                                Toast.makeText(MainActivity.this, this.getString(R.string.cantReadStorage), Toast.LENGTH_SHORT).show();
+                            }
+                            //  }
+                        } else {
+                            requestStoragePermission();
+                        }
+
+
+                        break;
+
+                    case R.id.previousSongButton:
+
+                        this.stopTimer();
+
+                        if (currentSongNo == 0) {
+                            currentSongNo = (importedSongs.toArray().length - 1);
+                        } else {
+                            currentSongNo--;
+                        }
+
+                        setNewBpmAndNameFromBase();
+
+                        bpmAmount = Integer.valueOf(bpmEditTextInc.getText().toString()).intValue();
+                        setTempoMarking();
+
+                        break;
+
+                    case R.id.nextSongButton:
+
+                        this.stopTimer();
+
+                        if (currentSongNo == (importedSongs.toArray().length - 1)) {
+                            currentSongNo = 0;
+                        } else {
+                            currentSongNo++;
+                        }
+
+                        setNewBpmAndNameFromBase();
+
+                        bpmAmount = Integer.valueOf(bpmEditTextInc.getText().toString()).intValue();
+                        setTempoMarking();
+
+                        break;
+
+                    default:
+                        break;
                 }
-                else {
-                    requestStoragePermission();
-                }
+            }
 
 
-                break;
-
-            case R.id.previousSongButton:
-
-                this.stopTimer();
-
-                if(currentSongNo == 0){
-                    currentSongNo = (importedSongs.toArray().length-1);
-                }
-                else{
-                    currentSongNo--;
-                }
-
-                setNewBpmAndNameFromBase();
-
-                bpmAmount = Integer.valueOf(bpmEditTextInc.getText().toString()).intValue();
-                setTempoMarking();
-
-                break;
-
-            case R.id.nextSongButton:
-
-                this.stopTimer();
-
-                if(currentSongNo == (importedSongs.toArray().length-1)){
-                    currentSongNo = 0;
-                }
-                else{
-                    currentSongNo++;
-                }
-
-                setNewBpmAndNameFromBase();
-
-                bpmAmount = Integer.valueOf(bpmEditTextInc.getText().toString()).intValue();
-                setTempoMarking();
-
-                break;
-
-            default:
-                break;
         }
-    }
-
-
-}
