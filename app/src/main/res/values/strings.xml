@@ -16,7 +16,6 @@
     <string name="flashAnimation">Screen flash on tick</string>
     <string name="flashAnimationSummary">Toggle screen blink effect when metronome makes one tick</string>
     <string name="performerTitle">Performer - Title</string>
-
     <string name="soundOne">Sound 1</string>
     <string name="soundTwo">Sound 2</string>
     <string name="soundThree">Sound 3</string>
@@ -27,7 +26,7 @@
     <string name="german">Deutsch</string>
     <string name="storagePermGranted">Storage permission granted. Please press the import button again</string>
     <string name="baseImpSuccess">Database imported successfully! Tap again to hide imported songs</string>
-    <string name="cantImpData">Cannot import data. File doesn\'t exist or it\'s wrong named or it\'s wrong formatted</string>
+    <string name="cantImpData">Data cannot be imported. The file either does not exist or is misnamed or formatted incorrectly</string>
     <string name="cantReadStorage">Cannot read from external storage</string>
     <string name="permissionInfo">You must grant storage permission to import data</string>
     <string name="holdToReset">Hold tap button to reset counter</string>
@@ -35,6 +34,15 @@
     <string name="tapReset">Tap counter has been reset</string>
     <string name="baseHidden">Database has been closed</string>
     <string name="exceededBpmRange">Illegal BPM value. Please set the BPM value between 1 and 300.</string>
+    <string name="exitApplicationTitle">Closing application</string>
+    <string name="exitApplicationMessage">Are you sure you want to exit the application?</string>
+    <string name="exitApplicationYes">Yes</string>
+    <string name="exitApplicationNo">No</string>
+    <string name="databaseExists">Database already exists!</string>
+    <string name="databaseGenerated">Database generated in Download folder. You can edit it to add your own songs</string>
+    <string name="permToRecord">Please grant permissions to record audio</string>
+    <string name="audioPermDenied">Permissions denied to record audio</string>
+    <string name="storageNotRead">External storage is not readable</string>
 
 
 </resources>

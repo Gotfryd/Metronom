@@ -16,7 +16,6 @@
     <string name="flashAnimation">Miganie ekranu przy tykaniu</string>
     <string name="flashAnimationSummary">Przełącz efekt migania ekranu, gdy metronom wykona jedno tyknięcie</string>
     <string name="performerTitle">Wykonawca - Tytuł</string>
-
     <string name="soundOne">Dźwięk 1</string>
     <string name="soundTwo">Dźwięk 2</string>
     <string name="soundThree">Dźwięk 3</string>
@@ -25,16 +24,26 @@
     <string name="english">English</string>
     <string name="polish">Polski</string>
     <string name="german">Deutsch</string>
-    <string name="storagePermGranted">Storage permission granted. Please press the import button again</string>
-    <string name="baseImpSuccess">Database imported successfully! Tap again to hide imported songs</string>
-    <string name="cantImpData">Cannot import data. File doesn\'t exist or it\'s wrong named or it\'s wrong formatted</string>
-    <string name="cantReadStorage">Cannot read from external storage</string>
-    <string name="permissionInfo">You must grant storage permission to import data</string>
-    <string name="holdToReset">Hold tap button to reset counter</string>
-    <string name="allowPermission">Select \"Allow management of all files\" to grant database reading permissions</string>
-    <string name="tapReset">Tap counter has been reset</string>
-    <string name="baseHidden">Database has been closed</string>
-    <string name="exceededBpmRange">Illegal BPM value. Please set the BPM value between 1 and 300.</string>
+    <string name="storagePermGranted">Udzielono pozwolenia na przechowywanie. Proszę ponownie nacisnąć przycisk importu</string>
+    <string name="baseImpSuccess">Baza danych została pomyślnie zaimportowana! Stuknij ponownie, aby ukryć zaimportowane utwory</string>
+    <string name="cantImpData">Nie można zaimportować danych. Plik albo nie istnieje, albo ma niewłaściwą nazwę albo jest niepoprawnie sformatowany</string>
+    <string name="cantReadStorage">Nie można odczytać z pamięci zewnętrznej</string>
+    <string name="permissionInfo">Aby zaimportować dane, musisz udzielić pozwolenia na przechowywanie</string>
+    <string name="holdToReset">Przytrzymaj przycisk kliknięcia, aby zresetować licznik</string>
+    <string name="allowPermission">Wybierz „Zezwól na zarządzanie wszystkimi plikami”, aby przyznać uprawnienia do odczytu bazy danych</string>
+    <string name="tapReset">Licznik kliknięć został zresetowany</string>
+    <string name="baseHidden">Baza danych została zamknięta</string>
+    <string name="exceededBpmRange">Niedozwolona wartość BPM. Ustaw wartość BPM w zakresie od 1 do 300.</string>
+    <string name="exitApplicationTitle">Zamknięcie aplikacji</string>
+    <string name="exitApplicationMessage">Czy na pewno chcesz wyjść z aplikacji?</string>
+    <string name="exitApplicationYes">Tak</string>
+    <string name="databaseExists">Baza danych już istnieje!</string>
+    <string name="databaseGenerated">Baza danych wygenerowana w folderze Download. Możesz ją edytować, aby dodać własne utwory</string>
+    <string name="permToRecord">Zezwól na nagrywanie dźwięku</string>
+    <string name="audioPermDenied">Odmowa uprawnień do nagrywania dźwięku</string>
+    <string name="storageNotRead">Nie można odczytać pamięci zewnętrznej</string>
+    <string name="exitApplicationNo">Nie</string>
+    <string name="exitApplicationNo">N</string>
 
 
 </resources>

@@ -83,7 +83,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     boolean isPlaying = false;
     boolean isImportActive = false;
-    boolean isRecordingActive = false;
+    boolean isRecording = false;
     boolean firstTap = true;
     boolean isAnimationEnabled = true;
 
@@ -93,6 +93,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     String line;
     String audioFileName = "AudioSample";
     String audioFileExtension = ".mp3";
+    String effectName;
+    String languageCode;
 
     File csvFile;
 
@@ -103,17 +105,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     int bpmAmount;
     int currentSongNo = 0;
     int tapCounter = 0;
-    private int STORAGE_PERMISSION_CODE = 1;
-    final int SETTINGS_ACTIVITY = 1;
     int holdDelay = 80;
     int minBpm = 1; // 1 poniewaz jezeli Timer dostanie wartosc mniejsza niz 1 ms to crash aplikacji
     int maxBpm = 300; // 300 poniewaz jest to juz bardzo wysoka wartosc i jest to prog w ktorym zaczyna sie gatunek muzyki Speedcore czyli ekstremalnie szybkiej. BPM powyzej 200 sa juz rzadko uzywane
+
     long summedTapsTime;
     long averageTapsTime;
+
     short currentTact;
 
-    String effectName;
-    String languageCode;
+    final double referenceAmplitude = 0.0001;
 
     Intent settingsIntent;
 
@@ -125,6 +126,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     Runnable runnable;
 
     MediaPlayer tickSound;
+
+    MediaRecorder mediaRecorder;
 
     Timer tickTimer;
     TimerTask tickTone;
@@ -153,12 +156,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     ActivityResultLauncher<Intent> settingsActivityResultLauncher;
 
-    MediaRecorder mediaRecorder;
-    final double referenceAmplitude = 0.0001;
-    private String AudioSavaPath = null;
-    boolean isRecording = false;
-
-    String path = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -269,6 +266,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 firstTap = true;
                 //bpmEditTextInc.setText(String.valueOf((90)));
                 setNewBpm(90);
+                setTempoMarking();
                 stopTimer();
                 Toast.makeText(MainActivity.this, R.string.tapReset, Toast.LENGTH_SHORT).show();
                 return true;
@@ -279,7 +277,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             @Override
             public boolean onLongClick(View view) {
                 generateCsvFile();
-                Toast.makeText(MainActivity.this, "Database generated. You can edit it to add your songs", Toast.LENGTH_SHORT).show();
                 return true;
             }
         });
@@ -339,6 +336,24 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
 // koniec onCreate
 
+    @Override
+    public void onBackPressed() {
+        new AlertDialog.Builder(this)
+                .setIcon(android.R.drawable.ic_lock_power_off)
+                .setTitle(R.string.exitApplicationTitle)
+                .setMessage(R.string.exitApplicationMessage)
+                .setPositiveButton(R.string.exitApplicationYes, new DialogInterface.OnClickListener()
+                {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        finish();
+                        System.exit(0);
+                    }
+
+                })
+                .setNegativeButton(R.string.exitApplicationNo, null)
+                .show();
+    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -360,15 +375,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
         return super.onOptionsItemSelected(item);
     }
-
-//    @Override
-//    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-//        super.onActivityResult(requestCode, resultCode, data);
-//
-//        if(requestCode == SETTINGS_ACTIVITY){
-//            this.recreate();
-//        }
-//    }
 
     public void setAppTheme() {
         SP = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
@@ -435,7 +441,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             // Toast.makeText(MainActivity.this, "External storage is readable", Toast.LENGTH_SHORT).show();
             return true;
         } else {
-            //  Toast.makeText(MainActivity.this, "External storage is not readable", Toast.LENGTH_SHORT).show();
+              Toast.makeText(MainActivity.this, (R.string.storageNotRead), Toast.LENGTH_SHORT).show();
             return false;
         }
     }
@@ -467,7 +473,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
             fis.close();
         } catch (FileNotFoundException e) {
-            System.out.println("File doesn't exist!");
+             System.out.println("File not found!");
             e.printStackTrace();
             return false;
         } catch (IOException e) {
@@ -480,11 +486,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private void generateCsvFile() {
-        fileName = "database.csv";
-        filePath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).toString();
         csvFile = new File(filePath, fileName);
         if(csvFile.exists()){
-            Toast.makeText(MainActivity.this, "Database already exists!", Toast.LENGTH_SHORT).show();
+            Toast.makeText(MainActivity.this, (R.string.databaseExists), Toast.LENGTH_SHORT).show();
         }
         else{
             csvFile = new File(filePath, fileName);
@@ -493,6 +497,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 writer.append(dataBaseContent);
                 writer.flush();
                 writer.close();
+                Toast.makeText(MainActivity.this, (R.string.databaseGenerated), Toast.LENGTH_SHORT).show();
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -538,7 +543,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             pausePlayButton.setImageResource(R.drawable.ic_pause);
 
         } else {
-            Toast.makeText(MainActivity.this, this.getString(R.string.exceededBpmRange), Toast.LENGTH_SHORT).show();
+            Toast.makeText(MainActivity.this, (R.string.exceededBpmRange), Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -576,7 +581,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         if (isBpmInRange(newBpm)) {
             bpmEditTextInc.setText(String.valueOf(newBpm));
         } else {
-            Toast.makeText(MainActivity.this, this.getString(R.string.exceededBpmRange), Toast.LENGTH_SHORT).show();
+            Toast.makeText(MainActivity.this, (R.string.exceededBpmRange), Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -584,7 +589,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         if (isBpmInRange(bpmAmount + newBpm)) {
             bpmEditTextInc.setText(String.valueOf(bpmAmount + newBpm));
         } else {
-            Toast.makeText(MainActivity.this, this.getString(R.string.exceededBpmRange), Toast.LENGTH_SHORT).show();
+            Toast.makeText(MainActivity.this, (R.string.exceededBpmRange), Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -649,13 +654,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     @RequiresApi(api = Build.VERSION_CODES.R)
     private void requestStoragePermission() {
-//        if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.READ_EXTERNAL_STORAGE)) {
-//            ActivityCompat.requestPermissions(MainActivity.this, new String[] {Manifest.permission.READ_EXTERNAL_STORAGE}, STORAGE_PERMISSION_CODE);
-//        }
-//        else {
-//            ActivityCompat.requestPermissions(this, new String[] {Manifest.permission.READ_EXTERNAL_STORAGE}, STORAGE_PERMISSION_CODE);
-//        }
-        Toast.makeText(MainActivity.this, this.getString(R.string.allowPermission), Toast.LENGTH_SHORT).show();
+        Toast.makeText(MainActivity.this, (R.string.allowPermission), Toast.LENGTH_SHORT).show();
         Intent intent = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION);
         Uri uri = Uri.fromParts("package", getPackageName(), null);
         intent.setData(uri);
@@ -668,7 +667,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
             //When permission is not granted by user, show them message why this permission is needed.
             if (ActivityCompat.shouldShowRequestPermissionRationale(this, Manifest.permission.RECORD_AUDIO)) {
-                Toast.makeText(this, "Please grant permissions to record audio", Toast.LENGTH_LONG).show();
+                Toast.makeText(this, (R.string.permToRecord), Toast.LENGTH_LONG).show();
                 //Give user option to still opt-in the permissions
                 ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.RECORD_AUDIO}, MY_PERMISSIONS_RECORD_AUDIO);
            }
@@ -704,11 +703,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             e.printStackTrace();
         }
         mediaRecorder.start();
+        recordButton.setColorFilter(Color.argb(255, 0, 255, 0));
         isRecording = true;
     }
 
     private void stopRecording() {
         mediaRecorder.stop();
+        mediaRecorder.release();
+        mediaRecorder = null;
+        recordButton.clearColorFilter();
         isRecording = false;
     }
 
@@ -717,24 +720,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         File music = contextWrapper.getExternalFilesDir(Environment.DIRECTORY_MUSIC);
         File file = new File(music, audioFileName + audioFileExtension);
         return file.getPath();
-    }
-
-    @Override
-    public void onBackPressed() {
-        new AlertDialog.Builder(this)
-                .setIcon(android.R.drawable.ic_dialog_dialer)
-                .setTitle("Closing application")
-                .setMessage("Are you sure you want to exit the application?")
-                .setPositiveButton("Yes", new DialogInterface.OnClickListener()
-                {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        finish();
-                    }
-
-                })
-                .setNegativeButton("No", null)
-                .show();
     }
 
     //Handling callback
@@ -749,7 +734,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 } else {
                     // permission denied, boo! Disable the
                     // functionality that depends on this permission.
-                    Toast.makeText(this, "Permissions Denied to record audio", Toast.LENGTH_LONG).show();
+                    Toast.makeText(this, (R.string.audioPermDenied), Toast.LENGTH_LONG).show();
                 }
                 return;
             }
@@ -757,23 +742,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
 
-//    @Override
-//    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-//        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-//        if (requestCode == STORAGE_PERMISSION_CODE) {
-//            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-//                Toast.makeText(MainActivity.this, this.getString(R.string.storagePermGranted), Toast.LENGTH_SHORT).show();
-//            } else {
-//                Toast.makeText(MainActivity.this, this.getString(R.string.permissionInfo), Toast.LENGTH_SHORT).show();
-//            }
-//        }
-//    }
-
-
             @RequiresApi(api = Build.VERSION_CODES.R)
             @Override
             public void onClick (View view){
-
 
                 switch (view.getId()) {
 
@@ -816,12 +787,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                     case R.id.tapButton:
                         // ustawic bpm na podstawie tylko 2 klikniec - czas miedzy pierwszym a drugim klinieciem to bpm, po drugim kliknieciu resetuje sie funkcja i przycisk jest gotowy na ponowne wystukanie tempa
-
                         if (firstTap) { // pierwsze inicjujace klikniecie
-                            Toast.makeText(MainActivity.this, this.getString(R.string.holdToReset), Toast.LENGTH_SHORT).show();
+                            Toast.makeText(MainActivity.this, (R.string.holdToReset), Toast.LENGTH_SHORT).show();
                             stopTimer();
                             tapStopwatch = Stopwatch.createUnstarted();
                             tapStopwatch.start();
+                            setTempoMarking();
                             firstTap = false;
 
                         } else {
@@ -834,6 +805,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                             averageTapsTime = summedTapsTime / tapCounter;
                             //bpmEditTextInc.setText(String.valueOf((60000/averageTapsTime))); //wylicz srednia w bpm
                             setNewBpm((int) (60000 / averageTapsTime));
+                            setTempoMarking();
                             tapStopwatch.start();
                         }
 
@@ -841,14 +813,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
                     case R.id.recordButton:
 
-                        if (!isRecordingActive) {
-                            recordButton.setColorFilter(Color.argb(255, 0, 255, 0));
-                            isRecordingActive = true;
+                        if (!isRecording) {
                             requestAudioPermissions(); // rowniez wywolywana jest metoda startRecording();
                         }
                         else {
-                            recordButton.clearColorFilter();
-                            isRecordingActive = false;
                             stopRecording();
                         }
 
@@ -863,7 +831,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                 if (importAndDataRead()) {
 
                                     if (!isImportActive) {
-                                        Toast.makeText(MainActivity.this, this.getString(R.string.baseImpSuccess), Toast.LENGTH_SHORT).show();
+                                        Toast.makeText(MainActivity.this, (R.string.baseImpSuccess), Toast.LENGTH_SHORT).show();
                                         this.stopTimer();
                                         importAndDataRead();  // funkcja wczytujaca piosenki z tempem z pliku csv
                                         previousSongButton.setEnabled(true);
@@ -883,11 +851,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                         Toast.makeText(MainActivity.this, R.string.baseHidden, Toast.LENGTH_SHORT).show();
                                     }
                                 } else {
-                                    Toast.makeText(MainActivity.this, this.getString(R.string.cantImpData), Toast.LENGTH_SHORT).show();
+                                    Toast.makeText(MainActivity.this, (R.string.cantImpData), Toast.LENGTH_SHORT).show();
                                 }
 
                             } else {
-                                Toast.makeText(MainActivity.this, this.getString(R.string.cantReadStorage), Toast.LENGTH_SHORT).show();
+                                Toast.makeText(MainActivity.this, (R.string.cantReadStorage), Toast.LENGTH_SHORT).show();
                             }
                             //  }
                         } else {
