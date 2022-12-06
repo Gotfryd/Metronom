@@ -15,6 +15,12 @@
             android:title="@string/flashAnimation"
             android:summary="@string/flashAnimationSummary" />
 
+        <SwitchPreference
+            android:defaultValue="true"
+            android:key="flashlight_switch"
+            android:title="@string/flashlightOnTick"
+            android:summary="@string/flashlightOnTickSummary" />
+
     </PreferenceCategory>
 
 
@@ -30,6 +36,13 @@
             android:key="sound_effects_list"
             android:summary="@string/soundEffectSummary"
             android:title="@string/soundEffect" />
+
+        <SwitchPreference
+            android:defaultValue="true"
+            android:key="vibrations_switch"
+            android:title="@string/vibrationsOnTick"
+            android:summary="@string/vibrationsOnTickSummary" />
+
     </PreferenceCategory>
 
     <PreferenceCategory android:title="@string/preferenceCategoryThree">

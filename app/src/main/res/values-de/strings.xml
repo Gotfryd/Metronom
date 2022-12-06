@@ -5,7 +5,7 @@
     <string name="settings_icon">Settings</string>
     <string name="actionBarTitle">Metronom</string>
     <string name="preferenceCategoryOne">Anzeige</string>
-    <string name="preferenceCategoryTwo">Klang</string>
+    <string name="preferenceCategoryTwo">Geräusche und Schwingungen</string>
     <string name="preferenceCategoryThree">Sprache</string>
     <string name="darkTheme">Dunkles Thema</string>
     <string name="darkThemeSummary">Ändern Sie die Farben der Benutzeroberfläche in dunkel</string>
@@ -43,6 +43,9 @@
     <string name="permToRecord">Bitte gewähren Sie die Berechtigung zum Aufnehmen von Audio</string>
     <string name="audioPermDenied">Berechtigungen zum Aufnehmen von Audio verweigert</string>
     <string name="storageNotRead">Externer Speicher ist nicht lesbar</string>
-
-
+    <string name="vibrationsOnTick">Vibration beim Ticken</string>
+    <string name="vibrationsOnTickSummary">Aktivieren oder deaktivieren Sie die Vibrationsfunktion beim Metronom-Tick</string>
+    <string name="flashlightOnTick">Taschenlampe auf Ticken</string>
+    <string name="noFlashOnDevice">Keine Taschenlampe auf Ihrem Gerät verfügbar</string>
+    <string name="flashlightOnTickSummary">Taschenlampe auf Metronom-Tick ein-/ausschalten</string>
 </resources>

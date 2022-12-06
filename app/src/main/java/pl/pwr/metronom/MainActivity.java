@@ -7,7 +7,6 @@ import androidx.activity.result.ActivityResultCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
@@ -18,22 +17,17 @@ import androidx.core.content.ContextCompat;
 import androidx.preference.PreferenceManager;
 
 import android.Manifest;
-import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
-import android.content.res.ColorStateList;
 import android.content.res.Configuration;
 import android.graphics.Color;
-import android.graphics.drawable.AnimationDrawable;
-import android.media.AudioFormat;
-import android.media.AudioManager;
-import android.media.AudioRecord;
-import android.media.AudioTrack;
-import android.media.Image;
+import android.hardware.camera2.CameraAccessException;
+import android.hardware.camera2.CameraManager;
 import android.media.MediaPlayer;
 import android.media.MediaRecorder;
 import android.net.Uri;
@@ -41,24 +35,19 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
+import android.os.Vibrator;
 import android.provider.Settings;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.view.MotionEvent;
 import android.view.View;
-import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
-import android.view.animation.LinearInterpolator;
 import android.view.inputmethod.EditorInfo;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
-import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -86,6 +75,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     boolean isRecording = false;
     boolean firstTap = true;
     boolean isAnimationEnabled = true;
+    boolean hasCameraFlash = false;
+    boolean isFlashOn = true;
+    boolean areVibrationsOn = true;
 
     String fileName = "database.csv";
     String filePath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).toString();
@@ -108,6 +100,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     int holdDelay = 80;
     int minBpm = 1; // 1 poniewaz jezeli Timer dostanie wartosc mniejsza niz 1 ms to crash aplikacji
     int maxBpm = 300; // 300 poniewaz jest to juz bardzo wysoka wartosc i jest to prog w ktorym zaczyna sie gatunek muzyki Speedcore czyli ekstremalnie szybkiej. BPM powyzej 200 sa juz rzadko uzywane
+    int vibrationTime = 100;
 
     long summedTapsTime;
     long averageTapsTime;
@@ -132,6 +125,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     Timer tickTimer;
     TimerTask tickTone;
 
+    CameraManager cameraManager;
+
+    Vibrator vibratorObj;
+
     Stopwatch tapStopwatch;
 
     TextView tempoMarking;
@@ -155,7 +152,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     SharedPreferences SP;
 
     ActivityResultLauncher<Intent> settingsActivityResultLauncher;
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -231,7 +227,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         });
         setTickEffect();
         setAnimationState();
-
+        setVibrationState();
+        setFlashlightState();
         tickTimer = new Timer("metronomeCounter", true);
 
         tickTone = new TimerTask() {
@@ -421,6 +418,27 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
+    private void setVibrationState() {
+        SP = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
+
+        if (SP.getBoolean("vibrations_switch", true)) {
+            areVibrationsOn = true;
+        } else {
+            areVibrationsOn = false;
+        }
+    }
+
+    private void setFlashlightState() {
+        SP = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
+
+        if (SP.getBoolean("flashlight_switch", true)) {
+            isFlashOn = true;
+        } else {
+            isFlashOn = false;
+        }
+    }
+
+
     private void setLanguage() {
 
         SP = PreferenceManager.getDefaultSharedPreferences(getBaseContext());
@@ -532,8 +550,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 public void run() {
                     tactController();
                     tickSound.start();
+                    if(areVibrationsOn) {
+                        vibrate();
+                    }
                     if (isAnimationEnabled) {
                         myConstraintLayout.startAnimation(blinkAnimation);
+                    }
+                    if(isFlashOn){
+                        blinkFlashLight();
                     }
                 }
             };
@@ -550,7 +574,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private void tactController() {
-
         switch (currentTact) {
             case 0:
                 setTactDotsColors(currentTact, beatDots.length - 1);
@@ -569,6 +592,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 System.out.println("Tact error");
                 break;
         }
+
     }
 
     private void setTactDotsColors(int dotToColor, int dotToClear) {
@@ -695,6 +719,29 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             System.out.println("code executed");
         }
 
+    private void blinkFlashLight(){
+        hasCameraFlash = getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA_FLASH);
+
+        if(hasCameraFlash) {
+            cameraManager = (CameraManager) getSystemService(Context.CAMERA_SERVICE);
+            try {
+                assert cameraManager != null;
+                String cameraId = cameraManager.getCameraIdList()[0];
+                cameraManager.setTorchMode(cameraId, true);
+                cameraManager.setTorchMode(cameraId, false);
+            } catch (CameraAccessException e) {
+                Log.e("Camera Problem", "Cannot turn off camera flashlight");
+            }
+        }
+        else{
+            Toast.makeText(MainActivity.this, (R.string.noFlashOnDevice), Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    private void vibrate(){
+        vibratorObj = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+        vibratorObj.vibrate(vibrationTime);
+    }
 
     private void startRecording() {
         try {
@@ -749,7 +796,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 switch (view.getId()) {
 
                     case R.id.incrementButton:
-
                         bpmAmount = Integer.valueOf(bpmEditTextInc.getText().toString()).intValue();
                         //bpmEditTextInc.setText(String.valueOf(bpmAmount+1));
                         incOrDecBpm(1);

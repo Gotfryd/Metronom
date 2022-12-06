@@ -5,7 +5,7 @@
     <string name="settings_icon">Settings</string>
     <string name="actionBarTitle">Metronome</string>
     <string name="preferenceCategoryOne">Display</string>
-    <string name="preferenceCategoryTwo">Sound</string>
+    <string name="preferenceCategoryTwo">Sounds and vibration</string>
     <string name="preferenceCategoryThree">Language</string>
     <string name="darkTheme">Dark Theme</string>
     <string name="darkThemeSummary">Change interface colors to dark</string>
@@ -43,6 +43,9 @@
     <string name="permToRecord">Please grant permissions to record audio</string>
     <string name="audioPermDenied">Permissions denied to record audio</string>
     <string name="storageNotRead">External storage is not readable</string>
-
-
+    <string name="vibrationsOnTickSummary">Enable or disable vibration function on metronome tick</string>
+    <string name="flashlightOnTick">Flashlight on tick</string>
+    <string name="flashlightOnTickSummary">Turn on/off flashlight on metronome tick</string>
+    <string name="noFlashOnDevice">No flashlight available on your device</string>
+    <string name="vibrationsOnTick">Vibrations on tick</string>
 </resources>

@@ -5,7 +5,7 @@
     <string name="settings_icon">Settings</string>
     <string name="actionBarTitle">Metronom</string>
     <string name="preferenceCategoryOne">Wyświetlacz</string>
-    <string name="preferenceCategoryTwo">Dźwięk</string>
+    <string name="preferenceCategoryTwo">Dźwięki i wibracje</string>
     <string name="preferenceCategoryThree">Język</string>
     <string name="darkTheme">Ciemny motyw</string>
     <string name="darkThemeSummary">Zmień kolory interfejsu na ciemne</string>
@@ -37,13 +37,15 @@
     <string name="exitApplicationTitle">Zamknięcie aplikacji</string>
     <string name="exitApplicationMessage">Czy na pewno chcesz wyjść z aplikacji?</string>
     <string name="exitApplicationYes">Tak</string>
+    <string name="exitApplicationNo">Nie</string>
     <string name="databaseExists">Baza danych już istnieje!</string>
     <string name="databaseGenerated">Baza danych wygenerowana w folderze Download. Możesz ją edytować, aby dodać własne utwory</string>
     <string name="permToRecord">Zezwól na nagrywanie dźwięku</string>
     <string name="audioPermDenied">Odmowa uprawnień do nagrywania dźwięku</string>
     <string name="storageNotRead">Nie można odczytać pamięci zewnętrznej</string>
-    <string name="exitApplicationNo">Nie</string>
-    <string name="exitApplicationNo">N</string>
-
-
+    <string name="vibrationsOnTick">Wibracje przy tyknięciu</string>
+    <string name="vibrationsOnTickSummary">Włącz lub wyłącz funkcję wibracji na takcie metronomu</string>
+    <string name="flashlightOnTick">Latarka przy tyknięciu</string>
+    <string name="noFlashOnDevice">Latarka jest niedostępna na Twoim urządzeniu</string>
+    <string name="flashlightOnTickSummary">Włącz / wyłącz latarkę na takcie metronomu</string>
 </resources>
