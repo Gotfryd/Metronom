@@ -24,9 +24,6 @@
     </PreferenceCategory>
 
 
-
-
-
     <PreferenceCategory android:title="@string/preferenceCategoryTwo">
 
         <ListPreference

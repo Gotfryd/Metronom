@@ -596,7 +596,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private void setTactDotsColors(int dotToColor, int dotToClear) {
-        beatDots[dotToColor].setColorFilter(Color.argb(255, 0, 255, 0));
+        beatDots[dotToColor].setColorFilter(getResources().getColor(R.color.myGreen));
         beatDots[dotToClear].clearColorFilter();
     }
 
@@ -750,7 +750,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             e.printStackTrace();
         }
         mediaRecorder.start();
-        recordButton.setColorFilter(Color.argb(255, 0, 255, 0));
+        recordButton.setColorFilter(getResources().getColor(R.color.myGreen));
         isRecording = true;
     }
 
@@ -796,6 +796,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 switch (view.getId()) {
 
                     case R.id.incrementButton:
+
                         bpmAmount = Integer.valueOf(bpmEditTextInc.getText().toString()).intValue();
                         //bpmEditTextInc.setText(String.valueOf(bpmAmount+1));
                         incOrDecBpm(1);
@@ -883,7 +884,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                         previousSongButton.setEnabled(true);
                                         nextSongButton.setEnabled(true);
                                         songName.setEnabled(true);
-                                        importButton.setColorFilter(Color.argb(255, 0, 255, 0));
+                                        importButton.setColorFilter(getResources().getColor(R.color.myGreen));
                                         isImportActive = true;
                                         setNewBpmAndNameFromBase();
                                         setTempoMarking();
