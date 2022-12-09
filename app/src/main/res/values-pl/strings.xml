@@ -13,7 +13,7 @@
     <string name="soundEffectSummary">Wybierz z listy jeden z dźwięków metronomu</string>
     <string name="changeLanguage">Zmień język</string>
     <string name="changeLanguageSummary">Wybierz język do zmiany</string>
-    <string name="flashAnimation">Miganie ekranu przy tykaniu</string>
+    <string name="flashAnimation">Miganie ekranu przy tyknięciu</string>
     <string name="flashAnimationSummary">Przełącz efekt migania ekranu, gdy metronom wykona jedno tyknięcie</string>
     <string name="performerTitle">Wykonawca - Tytuł</string>
     <string name="soundOne">Dźwięk 1</string>

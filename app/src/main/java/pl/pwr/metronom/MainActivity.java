@@ -81,7 +81,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     String fileName = "database.csv";
     String filePath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).toString();
-    String dataBaseContent = "Wykonawca;Tytuł;Tempo (BPM)\n" + "Metallica;The Unforgiven;69\n" + "Red Hot Chili Peppers;Under the Bridge;84";
+    String dataBaseContent = "Wykonawca;Tytuł;Tempo (BPM)\n" +
+            "Pink Floyd;Another Brick in the Wall, Pt. 2;104\n" +
+            "Scorpions;Rock You Like a Hurricane;124\n" +
+            "Guns N' Roses;Sweet Child O' Mine;128\n" +
+            "Dire Straits;Why Worry;94\n" +
+            "Lynyrd Skynyrd;Simple Man;60\n" +
+            "Metallica;The Unforgiven;69\n" +
+            "The Eagles;Hotel California;74\n" +
+            "Tears for Fears;Listen;81\n" +
+            "Red Hot Chili Peppers;Under the Bridge;84";
     String line;
     String audioFileName = "AudioSample";
     String audioFileExtension = ".mp3";
@@ -880,7 +889,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                     if (!isImportActive) {
                                         Toast.makeText(MainActivity.this, (R.string.baseImpSuccess), Toast.LENGTH_SHORT).show();
                                         this.stopTimer();
-                                        importAndDataRead();  // funkcja wczytujaca piosenki z tempem z pliku csv
                                         previousSongButton.setEnabled(true);
                                         nextSongButton.setEnabled(true);
                                         songName.setEnabled(true);
@@ -897,7 +905,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                         this.stopTimer();
                                         Toast.makeText(MainActivity.this, R.string.baseHidden, Toast.LENGTH_SHORT).show();
                                     }
-                                } else {
+                                }
+                                else {
                                     Toast.makeText(MainActivity.this, (R.string.cantImpData), Toast.LENGTH_SHORT).show();
                                 }
 
